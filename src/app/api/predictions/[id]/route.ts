@@ -1,32 +1,19 @@
 import { NextResponse } from 'next/server'
-
-interface Prediction {
-  fightId: string
-  winner: string
-}
-
-// This would typically be replaced with a database
-let predictions: Prediction[] = []
+import connectDB from '@/lib/mongodb'
+import Fight from '@/models/Fight'
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const fightId = params.id
-  const fightPredictions = predictions.filter(p => p.fightId === fightId)
-  const total = fightPredictions.length
-
-  if (total === 0) {
-    return NextResponse.json({})
+  try {
+    await connectDB();
+    const fight = await Fight.findById(params.id);
+    
+    if (fight) {
+      return NextResponse.json(fight.predictions || {})
+    } else {
+      return NextResponse.json({ error: 'Fight not found' }, { status: 404 })
+    }
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch predictions' }, { status: 500 })
   }
-
-  const counts: { [key: string]: number } = {}
-  fightPredictions.forEach(p => {
-    counts[p.winner] = (counts[p.winner] || 0) + 1
-  })
-
-  const percentages: { [key: string]: number } = {}
-  Object.keys(counts).forEach(winner => {
-    percentages[winner] = Math.round((counts[winner] / total) * 100)
-  })
-
-  return NextResponse.json(percentages)
 }
 

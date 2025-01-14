@@ -1,26 +1,32 @@
 import { NextResponse } from 'next/server'
-import { Fight } from '../../../../app/types/fight'
-
-// This would typically be replaced with a database
-let fights: Fight[] = [
-  { id: '1', fighter1: 'John Doe', fighter2: 'Jane Smith', date: '2023-06-01', category: 'Lightweight' },
-  { id: '2', fighter1: 'Mike Johnson', fighter2: 'Sarah Williams', date: '2023-06-15', category: 'Middleweight' },
-]
+import connectDB from '@/lib/mongodb'
+import Fight from '@/models/Fight'
+import { Fight as FightType } from '@/types/fight'
 
 export async function GET() {
-  return NextResponse.json(fights)
+  try {
+    await connectDB();
+    const fights = await Fight.find({}).sort({ date: 1 });
+    return NextResponse.json(fights)
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch fights' }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {
-  const { fighter1, fighter2, date, category } = await request.json()
-  const newFight: Fight = { 
-    id: Date.now().toString(), 
-    fighter1, 
-    fighter2, 
-    date, 
-    category 
+  try {
+    await connectDB();
+    const { fighter1, fighter2, date, category } = await request.json()
+    const newFight = await Fight.create({ 
+      fighter1, 
+      fighter2, 
+      date, 
+      category,
+      predictions: new Map()
+    })
+    return NextResponse.json(newFight, { status: 201 })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to create fight' }, { status: 500 })
   }
-  fights.push(newFight)
-  return NextResponse.json(newFight, { status: 201 })
 }
 
