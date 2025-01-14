@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import FightList from './components/FightList'
+import FightList from '@/components/FightList'
 
 export default function Home() {
   return (
