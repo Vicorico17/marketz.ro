@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { Fight } from '@/app/types/fight'
+import { Fight } from '../../../../../app/types/fight'
 
 // This would typically be replaced with a database
 let fights: Fight[] = [
