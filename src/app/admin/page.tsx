@@ -1,5 +1,5 @@
-import AdminFightList from '../components/AdminFightList'
-import AddFightForm from '../components/AddFightForm'
+import AdminFightList from '@/components/AdminFightList'
+import AddFightForm from '@/components/AddFightForm'
 
 export default function AdminPage() {
   return (
