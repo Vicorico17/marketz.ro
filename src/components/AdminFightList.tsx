@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Fight } from '../types/fight'
+import { Fight } from '../../app/types/fight'
 
 export default function AdminFightList() {
   const [fights, setFights] = useState<Fight[]>([])
