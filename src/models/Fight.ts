@@ -10,11 +10,11 @@ const FightSchema = new mongoose.Schema({
     required: true,
   },
   fighter1Image: {
-    type: String,  // This will store the Cloudinary URL
+    type: String,
     required: false,
   },
   fighter2Image: {
-    type: String,  // This will store the Cloudinary URL
+    type: String,
     required: false,
   },
   date: {
@@ -28,11 +28,22 @@ const FightSchema = new mongoose.Schema({
   predictions: {
     type: Map,
     of: Number,
-    default: new Map(),
+    default: () => new Map(),
   },
 }, {
   timestamps: true,
-  collection: 'fights'
+  collection: 'fights',
+  strict: true
+});
+
+// Add middleware to log operations
+FightSchema.pre('save', function(next) {
+  console.log('Saving fight:', this.toObject());
+  next();
+});
+
+FightSchema.post('save', function(doc) {
+  console.log('Fight saved:', doc.toObject());
 });
 
 FightSchema.set('toJSON', {
@@ -47,4 +58,9 @@ FightSchema.set('toJSON', {
   }
 });
 
-export default mongoose.models.Fight || mongoose.model('Fight', FightSchema); 
+// Delete the model if it exists to prevent OverwriteModelError
+if (mongoose.models.Fight) {
+  delete mongoose.models.Fight;
+}
+
+export default mongoose.model('Fight', FightSchema); 
