@@ -13,7 +13,13 @@ export async function POST(request: Request) {
     }
 
     // Get current predictions or initialize new map
-    const predictions = fight.predictions || new Map<string, number>();
+    const currentPredictions = fight.predictions?.toObject() || {};
+    const predictions = new Map<string, number>();
+    
+    // Convert existing predictions to Map
+    Object.entries(currentPredictions).forEach(([key, value]) => {
+      predictions.set(key, Number(value));
+    });
     
     // Update prediction counts
     predictions.set(winner, (predictions.get(winner) || 0) + 1);
@@ -22,22 +28,21 @@ export async function POST(request: Request) {
     fight.predictions = predictions;
     await fight.save();
 
-    // Calculate percentages
-    let total = 0;
+    // Convert Map to object for response
     const percentages: { [key: string]: number } = {};
+    let total = 0;
     
-    // First calculate total
     predictions.forEach((count: number) => {
       total += count;
     });
     
-    // Then calculate percentages
     predictions.forEach((count: number, fighter: string) => {
       percentages[fighter] = Math.round((count / total) * 100);
     });
 
     return NextResponse.json(percentages)
   } catch (error) {
+    console.error('Failed to submit prediction:', error);
     return NextResponse.json({ error: 'Failed to submit prediction' }, { status: 500 })
   }
 }
