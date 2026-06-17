@@ -1,12 +1,5 @@
 import mongoose from 'mongoose';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please add your MONGODB_URI to .env.local');
-}
-
-const MONGODB_URI = process.env.MONGODB_URI;
-console.log('Using MongoDB URI:', MONGODB_URI);
-
 let cached = (global as any).mongoose;
 
 if (!cached) {
@@ -14,13 +7,17 @@ if (!cached) {
 }
 
 async function connectDB(retries = 3) {
+  const mongodbUri = process.env.MONGODB_URI;
+  if (!mongodbUri) {
+    throw new Error('MONGODB_URI is not configured');
+  }
+
   try {
     if (cached.conn) {
-      console.log('Using cached MongoDB connection');
       const db = cached.conn.connection.db;
       if (db) {
         const collections = await db.listCollections().toArray();
-        console.log('Available collections:', collections.map((c: { name: string }) => c.name));
+        console.log('MongoDB collections:', collections.map((c: { name: string }) => c.name));
       }
       return cached.conn;
     }
@@ -33,14 +30,13 @@ async function connectDB(retries = 3) {
         family: 4
       };
 
-      console.log('Connecting to MongoDB...', MONGODB_URI);
-      cached.promise = mongoose.connect(MONGODB_URI, opts)
+      cached.promise = mongoose.connect(mongodbUri, opts)
         .then(async (mongoose) => {
           console.log('MongoDB connected successfully');
           const db = mongoose.connection.db;
           if (db) {
             const collections = await db.listCollections().toArray();
-            console.log('Available collections:', collections.map((c: { name: string }) => c.name));
+            console.log('MongoDB collections:', collections.map((c: { name: string }) => c.name));
           }
           return mongoose;
         })
@@ -56,13 +52,10 @@ async function connectDB(retries = 3) {
           
           throw error;
         });
-    } else {
-      console.log('Using existing MongoDB connection promise');
     }
 
     try {
       cached.conn = await cached.promise;
-      console.log('MongoDB connection state:', cached.conn.connection.readyState);
     } catch (e) {
       cached.promise = null;
       console.error('Error while awaiting MongoDB connection:', e);
@@ -71,7 +64,6 @@ async function connectDB(retries = 3) {
 
     return cached.conn;
   } catch (e) {
-    console.error('Error in connectDB:', e);
     throw e;
   }
 }
@@ -91,4 +83,4 @@ mongoose.connection.on('disconnected', () => {
   cached.promise = null;
 });
 
-export default connectDB; 
+export default connectDB;

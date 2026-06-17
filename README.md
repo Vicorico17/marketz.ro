@@ -1,60 +1,49 @@
+# Marketz.ro
 
-![tw-banner](https://github.com/thirdweb-example/next-starter/assets/57885104/20c8ce3b-4e55-4f10-ae03-2fe4743a5ee8)
+Romania-focused prediction market prototype built with Next.js. The current version is a mock on-chain product: wallets, balances, trades, tx hashes, condition IDs, blocks, market maker pricing, and settlement are simulated. No real blockchain, deposits, withdrawals, or real money are used.
 
-# thirdweb-next-starter
-
-Starter template to build an onchain react native app with [thirdweb](https://thirdweb.com/) and [next](https://nextjs.org/).
-
-## Installation
-
-Install the template using [thirdweb create](https://portal.thirdweb.com/cli/create)
+## Run Locally
 
 ```bash
-  npx thirdweb create app --next
+npm install
+npm run dev
 ```
 
-## Environment Variables
+Open `http://localhost:3000`.
 
-To run this project, you will need to add the following environment variables to your .env file:
+## Main Flows
 
-`CLIENT_ID`
+- `/` lists active Romanian markets, filters, search, portfolio, and mock wallet controls.
+- `/markets/[slug]` shows market details, LMSR probabilities, trade ticket, recent trades, and mock chain metadata.
+- `/admin` creates markets, changes status, and resolves markets.
 
-To learn how to create a client ID, refer to the [client documentation](https://portal.thirdweb.com/typescript/v5/client). 
-
-## Run locally
-
-Install dependencies
+The default mock admin key is:
 
 ```bash
-yarn
+marketz-admin
 ```
 
-Start development server
+Override it with:
 
 ```bash
-yarn dev
+ADMIN_MOCK_KEY=your-key
 ```
 
-Create a production build
+## Mock Market Mechanics
+
+- Users connect a generated browser wallet address.
+- Each wallet starts with `1000 mRON` demo balance.
+- Faucet adds more demo credits.
+- Buying an outcome uses an LMSR market maker.
+- Trades create mock tx hashes and mock block numbers.
+- Resolved winning positions receive `1 mRON` per share.
+
+## Environment
+
+Copy `.env.example` if you need local env values:
 
 ```bash
-yarn build
+cp .env.example .env.local
 ```
 
-Preview the production build
-
-```bash
-yarn start
-```
-
-## Resources
-
-- [Documentation](https://portal.thirdweb.com/typescript/v5)
-- [Templates](https://thirdweb.com/templates)
-- [YouTube](https://www.youtube.com/c/thirdweb)
-- [Blog](https://blog.thirdweb.com)
-
-## Need help?
-
-For help or feedback, please [visit our support site](https://thirdweb.com/support)
-# marketz.ro
+MongoDB and Cloudinary are currently optional. The prototype uses an in-memory demo store so the app works immediately in development.

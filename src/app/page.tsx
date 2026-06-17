@@ -1,92 +1,170 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import FightList from '@/components/FightList'
-import AddFightForm from '@/components/AddFightForm'
+import Image from 'next/image';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { BarChart3, Search, ShieldCheck, Sparkles, WalletCards } from 'lucide-react';
+import { MarketCard } from '@/components/MarketCard';
+import { PortfolioPanel } from '@/components/PortfolioPanel';
+import { WalletPanel } from '@/components/WalletPanel';
+import { useMockWallet } from '@/hooks/useMockWallet';
+import { categoryLabel } from '@/lib/labels';
+import type { MarketCategory, MarketSnapshot } from '@/types/market';
 
-console.log('Home component file loaded');
+const categories: Array<'all' | MarketCategory> = ['all', 'politica', 'economie', 'sport', 'locale', 'cultura', 'tech', 'meteo'];
 
 export default function Home() {
-  console.log('Home component rendering');
-  
-  const [showAddFight, setShowAddFight] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string[]>([])
+  const [snapshot, setSnapshot] = useState<MarketSnapshot | null>(null);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<'all' | MarketCategory>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const walletState = useMockWallet();
 
-  const testMongoDB = async () => {
+  const loadMarkets = async () => {
+    setIsLoading(true);
     try {
-      console.log('Testing MongoDB connection...');
-      const response = await fetch('/api/test');
+      const response = await fetch('/api/markets');
       const data = await response.json();
-      console.log('Test response:', data);
-      alert(data.success ? 'MongoDB test successful!' : 'MongoDB test failed: ' + data.error);
-    } catch (error) {
-      console.error('Test error:', error);
-      alert('Test failed: ' + String(error));
+      setSnapshot(data);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    console.log('Home component mounted');
-  }, [])
+    void loadMarkets();
+  }, []);
+
+  const filteredMarkets = useMemo(() => {
+    const markets = snapshot?.markets || [];
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return markets.filter((market) => {
+      const matchesCategory = category === 'all' || market.category === category;
+      const matchesSearch =
+        !normalizedSearch ||
+        market.question.toLowerCase().includes(normalizedSearch) ||
+        market.description.toLowerCase().includes(normalizedSearch) ||
+        market.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch));
+      return matchesCategory && matchesSearch;
+    });
+  }, [category, search, snapshot]);
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0,
-        backgroundColor: 'black',
-        color: 'white',
-        padding: '1rem',
-        zIndex: 1000
-      }}>
-        <h2>Debug Panel</h2>
-        <p>showAddFight: {String(showAddFight)}</p>
-        <button
-          onClick={testMongoDB}
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Test MongoDB Connection
-        </button>
-      </div>
-
-      <header className="flex flex-col items-center mb-8 mt-16">
-        <div className="flex items-center">
-          <Image src="/street-logo.png" alt="marketz.ro logo" width={64} height={64} />
-          <h1 className="text-5xl font-bold ml-4 text-yellow-400">marketz.ro</h1>
+    <main className="min-h-screen bg-black">
+      <header className="border-b border-zinc-900 bg-black/90">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Marketz.ro" width={44} height={44} className="rounded-md" priority />
+            <div>
+              <div className="text-xl font-bold tracking-tight text-white">Marketz.ro</div>
+              <div className="text-xs text-zinc-500">Romania-focused prediction markets</div>
+            </div>
+          </Link>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link
+              href="/admin"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-zinc-800 px-4 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-900"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Admin mock
+            </Link>
+            <WalletPanel walletState={walletState} compact />
+          </div>
         </div>
-        <p className="red-text text-2xl mt-4">Street-style predictions</p>
       </header>
-      
-      <div className="flex flex-col items-center mb-8">
-        <button 
-          onClick={() => {
-            console.log('Toggle button clicked, current state:', showAddFight);
-            setShowAddFight(!showAddFight);
-          }}
-          className="text-yellow-400 hover:underline text-xl mb-4"
-        >
-          {showAddFight ? 'Hide Add Fight' : 'Add Fight'}
-        </button>
 
-        {showAddFight && (
-          <div className="w-full max-w-4xl">
-            <h2 className="text-2xl font-bold text-white mb-6">Add New Fight</h2>
-            <AddFightForm onSuccess={() => {
-              console.log('Fight added successfully');
-              window.location.reload();
-            }} />
+      <section className="border-b border-zinc-900">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px] lg:px-8">
+          <div>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+              <Sparkles className="h-3.5 w-3.5" />
+              Mock on-chain MVP
+            </div>
+            <h1 className="max-w-4xl text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl">
+              Piețe de predicții pentru România, cu trading mock și settlement transparent.
+            </h1>
+            <p className="mt-4 max-w-3xl text-base leading-7 text-zinc-400">
+              Cumpără shares pe rezultate, urmărește probabilități în timp real și testează fluxul de wallet fără bani reali sau blockchain real.
+            </p>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                  <BarChart3 className="h-4 w-4 text-emerald-300" />
+                  Volum demo
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">{snapshot?.totalVolume.toLocaleString('ro-RO') || '0'} mRON</div>
+              </div>
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                  <WalletCards className="h-4 w-4 text-amber-300" />
+                  Piețe deschise
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">{snapshot?.openMarkets || 0}</div>
+              </div>
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                  <ShieldCheck className="h-4 w-4 text-sky-300" />
+                  Trade-uri mock
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">{snapshot?.totalTrades || 0}</div>
+              </div>
+            </div>
+          </div>
+          <PortfolioPanel address={walletState.address} />
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Piețe active</h2>
+            <p className="mt-1 text-sm text-zinc-500">Probabilități calculate cu un market maker LMSR mock.</p>
+          </div>
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Caută piață"
+                className="h-11 w-full rounded-md border border-zinc-800 bg-zinc-950 pl-9 pr-3 text-sm text-white outline-none focus:border-emerald-400 sm:w-72"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
+          {categories.map((item) => (
+            <button
+              key={item}
+              onClick={() => setCategory(item)}
+              className={`h-9 shrink-0 rounded-md border px-3 text-sm font-medium transition ${
+                category === item
+                  ? 'border-emerald-400 bg-emerald-400 text-zinc-950'
+                  : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:bg-zinc-900'
+              }`}
+            >
+              {item === 'all' ? 'Toate' : categoryLabel(item)}
+            </button>
+          ))}
+        </div>
+
+        {isLoading ? (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-8 text-center text-zinc-400">Se încarcă piețele...</div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {filteredMarkets.map((market) => (
+              <MarketCard key={market.id} market={market} />
+            ))}
           </div>
         )}
-      </div>
 
-      <div className="max-w-4xl mx-auto">
-        <FightList />
-      </div>
+        {!isLoading && filteredMarkets.length === 0 && (
+          <div className="rounded-lg border border-dashed border-zinc-800 p-8 text-center text-zinc-500">Nu există piețe pentru filtrul curent.</div>
+        )}
+      </section>
     </main>
-  )
+  );
 }
-
