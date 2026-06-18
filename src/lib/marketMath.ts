@@ -2,6 +2,8 @@ import type { Market, MarketOutcome, MarketWithPrices, TradeQuote } from '@/type
 
 const MIN_SPEND = 1;
 const MAX_SPEND = 5000;
+const MIN_SHARES = 0.0001;
+const MAX_SELL_SHARES = 1_000_000;
 
 export function roundMoney(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
@@ -36,6 +38,12 @@ export function quantitiesFromProbabilities(outcomes: MarketOutcome[], probabili
     acc[outcome.id] = liquidity * Math.log(Math.max(normalized[index], 0.0001));
     return acc;
   }, {});
+}
+
+export function liquidityRiskFor(probabilities: number[], liquidity: number) {
+  const cleaned = probabilities.filter((probability) => Number.isFinite(probability) && probability > 0);
+  const lowestProbability = Math.max(Math.min(...(cleaned.length > 0 ? cleaned : [1])), 0.0001);
+  return roundMoney(liquidity * Math.log(1 / lowestProbability));
 }
 
 export function normalizeProbabilities(probabilities: number[] | undefined, count: number) {
@@ -87,6 +95,15 @@ export function costToBuyShares(market: Market, outcomeId: string, shares: numbe
   return lmsrCost(market.outcomes, nextQuantities, market.liquidity) - lmsrCost(market.outcomes, market.quantities, market.liquidity);
 }
 
+export function proceedsFromSellingShares(market: Market, outcomeId: string, shares: number) {
+  const nextQuantities = {
+    ...market.quantities,
+    [outcomeId]: (market.quantities[outcomeId] || 0) - shares,
+  };
+
+  return lmsrCost(market.outcomes, market.quantities, market.liquidity) - lmsrCost(market.outcomes, nextQuantities, market.liquidity);
+}
+
 export function quoteBuy(market: Market, outcomeId: string, amount: number): TradeQuote {
   if (!market.outcomes.some((outcome) => outcome.id === outcomeId)) {
     throw new Error('Outcome not found');
@@ -125,11 +142,42 @@ export function quoteBuy(market: Market, outcomeId: string, amount: number): Tra
   const probabilitiesAfter = probabilitiesFor(market.outcomes, nextQuantities, market.liquidity);
 
   return {
+    side: 'buy',
     outcomeId,
     amount: roundMoney(amount),
     shares,
     averagePrice: roundMoney(amount / shares),
     probabilityBefore: probabilitiesBefore[outcomeId],
     probabilityAfter: probabilitiesAfter[outcomeId],
+    priceImpact: probabilitiesAfter[outcomeId] - probabilitiesBefore[outcomeId],
+  };
+}
+
+export function quoteSell(market: Market, outcomeId: string, shares: number): TradeQuote {
+  if (!market.outcomes.some((outcome) => outcome.id === outcomeId)) {
+    throw new Error('Outcome not found');
+  }
+
+  if (!Number.isFinite(shares) || shares < MIN_SHARES || shares > MAX_SELL_SHARES) {
+    throw new Error(`Share amount must be between ${MIN_SHARES} and ${MAX_SELL_SHARES}`);
+  }
+
+  const probabilitiesBefore = probabilitiesFor(market.outcomes, market.quantities, market.liquidity);
+  const amount = proceedsFromSellingShares(market, outcomeId, shares);
+  const nextQuantities = {
+    ...market.quantities,
+    [outcomeId]: (market.quantities[outcomeId] || 0) - shares,
+  };
+  const probabilitiesAfter = probabilitiesFor(market.outcomes, nextQuantities, market.liquidity);
+
+  return {
+    side: 'sell',
+    outcomeId,
+    amount: roundMoney(amount),
+    shares: roundShares(shares),
+    averagePrice: roundMoney(amount / shares),
+    probabilityBefore: probabilitiesBefore[outcomeId],
+    probabilityAfter: probabilitiesAfter[outcomeId],
+    priceImpact: probabilitiesAfter[outcomeId] - probabilitiesBefore[outcomeId],
   };
 }

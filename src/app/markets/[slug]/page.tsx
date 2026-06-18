@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, CalendarClock, Coins, Hash, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CalendarClock, Coins, Hash, ShieldCheck, WalletCards } from 'lucide-react';
 import { PortfolioPanel } from '@/components/PortfolioPanel';
 import { ProbabilityBar } from '@/components/ProbabilityBar';
 import { TradeTicket } from '@/components/TradeTicket';
@@ -23,6 +23,10 @@ function formatDate(value: string) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+function formatMoney(value: number) {
+  return `${value.toLocaleString('ro-RO')} mRON`;
 }
 
 export default function MarketDetailPage() {
@@ -106,14 +110,15 @@ export default function MarketDetailPage() {
                 <p className="mt-1 text-sm text-zinc-500">Derivate din cantitățile LMSR mock, nu dintr-un oracle real.</p>
               </div>
               <div className="text-right text-sm text-zinc-400">
-                <div>{market.volume.toLocaleString('ro-RO')} mRON volum</div>
+                <div>{formatMoney(market.volume)} volum</div>
                 <div>{market.tradeCount} trade-uri</div>
+                <div>{formatMoney(market.liquidityRisk)} risc LP estimat</div>
               </div>
             </div>
             <ProbabilityBar outcomes={market.outcomes} probabilities={market.probabilities} />
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
               <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
                 <CalendarClock className="h-4 w-4 text-amber-300" />
@@ -123,18 +128,55 @@ export default function MarketDetailPage() {
             </div>
             <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
               <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
+                <Coins className="h-4 w-4 text-emerald-300" />
+                Lichiditate LMSR
+              </div>
+              <div className="text-sm font-medium text-white">b = {market.liquidity.toLocaleString('ro-RO')}</div>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+              <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
+                <WalletCards className="h-4 w-4 text-sky-300" />
+                Risc LP estimat
+              </div>
+              <div className="text-sm font-medium text-white">{formatMoney(market.liquidityRisk)}</div>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+              <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
                 <ShieldCheck className="h-4 w-4 text-emerald-300" />
                 Mock contract
               </div>
               <div className="truncate font-mono text-sm text-white">{market.chain.contractAddress}</div>
             </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 md:col-span-2 xl:col-span-4">
               <div className="mb-2 flex items-center gap-2 text-sm text-zinc-400">
                 <Hash className="h-4 w-4 text-sky-300" />
                 Condition ID
               </div>
               <div className="truncate font-mono text-sm text-white">{market.chain.conditionId}</div>
             </div>
+          </div>
+
+          <div className="mt-6 rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+            <h2 className="mb-4 text-lg font-semibold text-white">Dashboard lichiditate</h2>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-md border border-zinc-800 bg-black p-4">
+                <div className="text-xs text-zinc-500">Volum / risc LP</div>
+                <div className="mt-2 text-xl font-bold text-white">
+                  {market.liquidityRisk > 0 ? `${(market.volume / market.liquidityRisk).toFixed(1)}x` : '-'}
+                </div>
+              </div>
+              <div className="rounded-md border border-zinc-800 bg-black p-4">
+                <div className="text-xs text-zinc-500">Trade recomandat max</div>
+                <div className="mt-2 text-xl font-bold text-white">{formatMoney(Math.max(5, market.liquidity * 0.25))}</div>
+              </div>
+              <div className="rounded-md border border-zinc-800 bg-black p-4">
+                <div className="text-xs text-zinc-500">Participanți</div>
+                <div className="mt-2 text-xl font-bold text-white">{market.participantCount}</div>
+              </div>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-zinc-500">
+              Risc LP este o estimare LMSR pentru comunicare de produs. Prototype-ul nu blochează capital real și nu distribuie fee-uri reale.
+            </p>
           </div>
 
           <div className="mt-6 rounded-lg border border-zinc-800 bg-zinc-950 p-5">
@@ -153,10 +195,15 @@ export default function MarketDetailPage() {
               {recentTrades.map((trade) => (
                 <div key={trade.id} className="grid gap-2 rounded-md border border-zinc-800 bg-black p-3 text-sm text-zinc-400 sm:grid-cols-[1fr_auto_auto] sm:items-center">
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-white">{trade.outcomeLabel}</div>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className={`rounded-md px-2 py-1 text-[11px] font-semibold ${trade.side === 'sell' ? 'bg-red-500/10 text-red-200' : 'bg-emerald-500/10 text-emerald-200'}`}>
+                        {trade.side === 'sell' ? 'Vânzare' : 'Cumpărare'}
+                      </span>
+                      <div className="truncate font-medium text-white">{trade.outcomeLabel}</div>
+                    </div>
                     <div className="truncate font-mono text-xs text-zinc-600">{trade.txHash}</div>
                   </div>
-                  <div>{trade.amount.toLocaleString('ro-RO')} mRON</div>
+                  <div>{formatMoney(trade.amount)}</div>
                   <div>{toPercent(trade.probabilityBefore)}% → {toPercent(trade.probabilityAfter)}%</div>
                 </div>
               ))}
@@ -169,6 +216,7 @@ export default function MarketDetailPage() {
           <TradeTicket
             market={market}
             wallet={walletState.wallet}
+            refreshKey={portfolioRefresh}
             onConnect={walletState.connect}
             onTradeComplete={handleTradeComplete}
           />

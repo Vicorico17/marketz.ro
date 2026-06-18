@@ -59,24 +59,34 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
 
   const markValue = data.positions.reduce((sum, position) => sum + position.markValue, 0);
   const costBasis = data.positions.reduce((sum, position) => sum + position.costBasis, 0);
+  const realizedPnl = data.positions.reduce((sum, position) => sum + (position.realizedPnl || 0), 0);
+  const activePositions = data.positions.filter((position) => position.shares > 0);
 
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-zinc-500">Portofoliu</div>
           <div className="mt-1 text-2xl font-bold text-white">{markValue.toLocaleString('ro-RO')} mRON</div>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-black px-3 py-2 text-right">
-          <div className="text-xs text-zinc-500">PnL nerealizat</div>
-          <div className={markValue - costBasis >= 0 ? 'font-semibold text-emerald-300' : 'font-semibold text-red-300'}>
-            {(markValue - costBasis).toLocaleString('ro-RO')} mRON
+        <div className="grid gap-2 text-right">
+          <div className="rounded-lg border border-zinc-800 bg-black px-3 py-2">
+            <div className="text-xs text-zinc-500">PnL nerealizat</div>
+            <div className={markValue - costBasis >= 0 ? 'font-semibold text-emerald-300' : 'font-semibold text-red-300'}>
+              {(markValue - costBasis).toLocaleString('ro-RO')} mRON
+            </div>
+          </div>
+          <div className="rounded-lg border border-zinc-800 bg-black px-3 py-2">
+            <div className="text-xs text-zinc-500">PnL realizat</div>
+            <div className={realizedPnl >= 0 ? 'font-semibold text-emerald-300' : 'font-semibold text-red-300'}>
+              {realizedPnl.toLocaleString('ro-RO')} mRON
+            </div>
           </div>
         </div>
       </div>
 
       <div className="space-y-3">
-        {data.positions.slice(0, 5).map((position) => (
+        {activePositions.slice(0, 5).map((position) => (
           <Link
             href={`/markets/${position.marketSlug}`}
             key={position.id}
@@ -100,7 +110,7 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
         ))}
       </div>
 
-      {data.positions.length === 0 && (
+      {activePositions.length === 0 && (
         <div className="rounded-md border border-dashed border-zinc-800 p-5 text-center text-sm text-zinc-500">
           Nu ai poziții încă.
         </div>
@@ -114,7 +124,9 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
         <div className="space-y-2">
           {data.trades.slice(0, 4).map((trade) => (
             <div key={trade.id} className="flex items-center justify-between gap-3 text-xs text-zinc-500">
-              <span className="truncate">{trade.outcomeLabel}</span>
+              <span className="truncate">
+                {trade.side === 'sell' ? 'Vândut' : 'Cumpărat'} · {trade.outcomeLabel}
+              </span>
               <span className="shrink-0 text-zinc-300">{trade.amount.toLocaleString('ro-RO')} mRON</span>
             </div>
           ))}

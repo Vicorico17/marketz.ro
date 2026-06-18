@@ -14,7 +14,7 @@ Open `http://localhost:3000`.
 ## Main Flows
 
 - `/` lists active Romanian markets, filters, search, portfolio, and mock wallet controls.
-- `/markets/[slug]` shows market details, LMSR probabilities, trade ticket, recent trades, and mock chain metadata.
+- `/markets/[slug]` shows market details, LMSR probabilities, buy/sell trade ticket, LP risk metrics, recent trades, and mock chain metadata.
 - `/admin` creates markets, changes status, and resolves markets.
 
 The default mock admin key is:
@@ -34,7 +34,8 @@ ADMIN_MOCK_KEY=your-key
 - Users connect a generated browser wallet address.
 - Each wallet starts with `1000 mRON` demo balance.
 - Faucet adds more demo credits.
-- Buying an outcome uses an LMSR market maker.
+- Buying and selling an outcome uses an LMSR market maker.
+- Each market exposes an estimated LP risk budget based on its liquidity and starting probabilities.
 - Trades create mock tx hashes and mock block numbers.
 - Resolved winning positions receive `1 mRON` per share.
 

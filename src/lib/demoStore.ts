@@ -1,9 +1,12 @@
 import {
   addPrices,
   createOutcomeId,
+  liquidityRiskFor,
+  normalizeProbabilities,
   probabilitiesFor,
   quantitiesFromProbabilities,
   quoteBuy,
+  quoteSell,
   roundMoney,
   roundShares,
   slugify,
@@ -21,6 +24,7 @@ import type {
   ResolveMarketInput,
   Trade,
   TradeQuote,
+  TradeSide,
   WalletAccount,
 } from '@/types/market';
 
@@ -55,6 +59,7 @@ function makeMarket(input: CreateMarketInput & { id: string; slug?: string; volu
     color: OUTCOME_COLORS[index % OUTCOME_COLORS.length],
   }));
   const liquidity = input.liquidity || 140;
+  const startingProbabilities = normalizeProbabilities(input.startingProbabilities || [], outcomes.length);
 
   return {
     id: input.id,
@@ -68,7 +73,8 @@ function makeMarket(input: CreateMarketInput & { id: string; slug?: string; volu
     resolutionSource: input.resolutionSource,
     status: 'open' as MarketStatus,
     liquidity,
-    quantities: quantitiesFromProbabilities(outcomes, input.startingProbabilities || [], liquidity),
+    liquidityRisk: liquidityRiskFor(startingProbabilities, liquidity),
+    quantities: quantitiesFromProbabilities(outcomes, startingProbabilities, liquidity),
     volume: input.volume || 0,
     tradeCount: input.tradeCount || 0,
     participantCount: 0,
@@ -223,6 +229,7 @@ export function getSnapshot(): MarketSnapshot {
   return {
     markets,
     totalVolume: roundMoney(markets.reduce((sum, market) => sum + market.volume, 0)),
+    totalLiquidityRisk: roundMoney(markets.reduce((sum, market) => sum + market.liquidityRisk, 0)),
     openMarkets: markets.filter((market) => market.status === 'open').length,
     totalTrades: markets.reduce((sum, market) => sum + market.tradeCount, 0),
   };
@@ -246,6 +253,7 @@ export function getMarket(slugOrId: string) {
 
 export function createMarket(input: CreateMarketInput) {
   const state = getState();
+  validateMarketInput(input);
   const id = `mkt-${Date.now().toString(36)}`;
   const market = makeMarket({
     ...input,
@@ -255,6 +263,39 @@ export function createMarket(input: CreateMarketInput) {
 
   state.markets.unshift(market);
   return publicMarket(market);
+}
+
+function validateMarketInput(input: CreateMarketInput) {
+  if (!input.question || input.question.trim().length < 12) {
+    throw new Error('Question must be at least 12 characters');
+  }
+  if (!input.description || input.description.trim().length < 30) {
+    throw new Error('Description must be at least 30 characters');
+  }
+  if (!input.resolutionSource || input.resolutionSource.trim().length < 20) {
+    throw new Error('Resolution source must be specific');
+  }
+  if (!Array.isArray(input.outcomes) || input.outcomes.length < 2 || input.outcomes.length > 5) {
+    throw new Error('Markets need between 2 and 5 outcomes');
+  }
+  const uniqueOutcomes = new Set(input.outcomes.map((outcome) => createOutcomeId(outcome, 0)));
+  if (uniqueOutcomes.size !== input.outcomes.length) {
+    throw new Error('Outcome labels must be unique');
+  }
+  const closeAt = Date.parse(input.closeAt);
+  if (!Number.isFinite(closeAt) || closeAt <= Date.now()) {
+    throw new Error('Close date must be in the future');
+  }
+  if (input.liquidity !== undefined && (!Number.isFinite(input.liquidity) || input.liquidity < 20 || input.liquidity > 10_000)) {
+    throw new Error('Liquidity must be between 20 and 10,000');
+  }
+  if (
+    input.startingProbabilities &&
+    input.startingProbabilities.length > 0 &&
+    input.startingProbabilities.length !== input.outcomes.length
+  ) {
+    throw new Error('Starting probabilities must match the number of outcomes');
+  }
 }
 
 export function updateMarket(slugOrId: string, updates: Partial<Pick<Market, 'status' | 'closeAt' | 'description' | 'resolutionSource'>>) {
@@ -329,12 +370,12 @@ export function faucetWallet(address: string, amount = 250) {
   return wallet;
 }
 
-export function getQuote(slugOrId: string, outcomeId: string, amount: number): TradeQuote {
+export function getQuote(slugOrId: string, outcomeId: string, amount: number, side: TradeSide = 'buy'): TradeQuote {
   const market = findMarket(slugOrId);
   if (!market) {
     throw new Error('Market not found');
   }
-  return quoteBuy(market, outcomeId, amount);
+  return side === 'sell' ? quoteSell(market, outcomeId, amount) : quoteBuy(market, outcomeId, amount);
 }
 
 export function placeTrade(input: PlaceTradeInput) {
@@ -351,27 +392,39 @@ export function placeTrade(input: PlaceTradeInput) {
     throw new Error('Market is closed');
   }
 
+  const side = input.side || 'buy';
   const wallet = getOrCreateWallet(input.walletAddress);
-  if (wallet.balance < input.amount) {
-    throw new Error('Insufficient demo balance');
-  }
-
   const outcome = market.outcomes.find((candidate) => candidate.id === input.outcomeId);
   if (!outcome) {
     throw new Error('Outcome not found');
   }
 
-  const quote = quoteBuy(market, input.outcomeId, input.amount);
+  const quote = side === 'sell'
+    ? quoteSell(market, input.outcomeId, Number(input.shares))
+    : quoteBuy(market, input.outcomeId, input.amount);
+
+  if (side === 'buy' && wallet.balance < quote.amount) {
+    throw new Error('Insufficient demo balance');
+  }
+
+  const positionId = `${wallet.address}:${market.id}:${input.outcomeId}`;
+  const existing = state.positions.find((position) => position.id === positionId);
+  if (side === 'sell' && (!existing || existing.shares < quote.shares)) {
+    throw new Error('Not enough shares to sell');
+  }
+
   const createdAt = now();
   const txHash = mockTxHash();
   const blockNumber = nextMockBlock();
 
-  market.quantities[input.outcomeId] = roundShares((market.quantities[input.outcomeId] || 0) + quote.shares);
+  market.quantities[input.outcomeId] = roundShares(
+    (market.quantities[input.outcomeId] || 0) + (side === 'sell' ? -quote.shares : quote.shares),
+  );
   market.volume = roundMoney(market.volume + quote.amount);
   market.tradeCount += 1;
   market.updatedAt = createdAt;
   market.chain = { ...market.chain, lastTxHash: txHash };
-  wallet.balance = roundMoney(wallet.balance - quote.amount);
+  wallet.balance = roundMoney(wallet.balance + (side === 'sell' ? quote.amount : -quote.amount));
   wallet.lastSeenAt = createdAt;
 
   const trade: Trade = {
@@ -379,6 +432,7 @@ export function placeTrade(input: PlaceTradeInput) {
     marketId: market.id,
     marketSlug: market.slug,
     walletAddress: wallet.address,
+    side,
     outcomeId: input.outcomeId,
     outcomeLabel: outcome.label,
     amount: quote.amount,
@@ -392,14 +446,12 @@ export function placeTrade(input: PlaceTradeInput) {
   };
   state.trades.push(trade);
 
-  const positionId = `${wallet.address}:${market.id}:${input.outcomeId}`;
-  const existing = state.positions.find((position) => position.id === positionId);
-  if (existing) {
+  if (side === 'buy' && existing) {
     existing.shares = roundShares(existing.shares + quote.shares);
     existing.costBasis = roundMoney(existing.costBasis + quote.amount);
     existing.averagePrice = roundMoney(existing.costBasis / existing.shares);
     existing.updatedAt = createdAt;
-  } else {
+  } else if (side === 'buy') {
     state.positions.push({
       id: positionId,
       marketId: market.id,
@@ -411,6 +463,7 @@ export function placeTrade(input: PlaceTradeInput) {
       shares: quote.shares,
       costBasis: quote.amount,
       averagePrice: quote.averagePrice,
+      realizedPnl: 0,
       currentProbability: quote.probabilityAfter,
       markValue: 0,
       payoutIfCorrect: quote.shares,
@@ -419,6 +472,14 @@ export function placeTrade(input: PlaceTradeInput) {
       isWinner: false,
       updatedAt: createdAt,
     });
+  } else if (existing) {
+    const previousShares = existing.shares;
+    const costRemoved = previousShares > 0 ? roundMoney(existing.costBasis * (quote.shares / previousShares)) : 0;
+    existing.shares = roundShares(Math.max(previousShares - quote.shares, 0));
+    existing.costBasis = existing.shares > 0 ? roundMoney(Math.max(existing.costBasis - costRemoved, 0)) : 0;
+    existing.averagePrice = existing.shares > 0 ? roundMoney(existing.costBasis / existing.shares) : 0;
+    existing.realizedPnl = roundMoney((existing.realizedPnl || 0) + quote.amount - costRemoved);
+    existing.updatedAt = createdAt;
   }
 
   return {
@@ -448,6 +509,7 @@ export function getPortfolio(address: string) {
         ...position,
         marketSlug: market.slug,
         marketQuestion: market.question,
+        realizedPnl: position.realizedPnl || 0,
         currentProbability: probability,
         markValue: roundMoney(markValue),
         payoutIfCorrect: roundMoney(position.shares),

@@ -1,4 +1,5 @@
 export type MarketStatus = 'draft' | 'open' | 'closed' | 'resolved' | 'voided';
+export type TradeSide = 'buy' | 'sell';
 
 export type MarketCategory =
   | 'politica'
@@ -35,6 +36,7 @@ export interface Market {
   resolutionSource: string;
   status: MarketStatus;
   liquidity: number;
+  liquidityRisk: number;
   quantities: Record<string, number>;
   volume: number;
   tradeCount: number;
@@ -71,6 +73,7 @@ export interface Position {
   shares: number;
   costBasis: number;
   averagePrice: number;
+  realizedPnl: number;
   currentProbability: number;
   markValue: number;
   payoutIfCorrect: number;
@@ -85,6 +88,7 @@ export interface Trade {
   marketId: string;
   marketSlug: string;
   walletAddress: string;
+  side: TradeSide;
   outcomeId: string;
   outcomeLabel: string;
   amount: number;
@@ -98,12 +102,14 @@ export interface Trade {
 }
 
 export interface TradeQuote {
+  side: TradeSide;
   outcomeId: string;
   amount: number;
   shares: number;
   averagePrice: number;
   probabilityBefore: number;
   probabilityAfter: number;
+  priceImpact: number;
 }
 
 export interface CreateMarketInput {
@@ -121,8 +127,10 @@ export interface CreateMarketInput {
 export interface PlaceTradeInput {
   marketSlug: string;
   walletAddress: string;
+  side?: TradeSide;
   outcomeId: string;
   amount: number;
+  shares?: number;
 }
 
 export interface ResolveMarketInput {
@@ -133,6 +141,7 @@ export interface ResolveMarketInput {
 export interface MarketSnapshot {
   markets: MarketWithPrices[];
   totalVolume: number;
+  totalLiquidityRisk: number;
   openMarkets: number;
   totalTrades: number;
 }

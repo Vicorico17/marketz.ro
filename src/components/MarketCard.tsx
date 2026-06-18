@@ -23,6 +23,7 @@ export function MarketCard({ market }: MarketCardProps) {
   const favoriteOutcome = [...market.outcomes].sort(
     (a, b) => (market.probabilities[b.id] || 0) - (market.probabilities[a.id] || 0),
   )[0];
+  const volumeToRisk = market.liquidityRisk > 0 ? market.volume / market.liquidityRisk : 0;
 
   return (
     <Link
@@ -66,6 +67,10 @@ export function MarketCard({ market }: MarketCardProps) {
         <div className="col-span-2 flex items-center gap-2">
           <CalendarClock className="h-4 w-4 text-zinc-500" />
           Închidere: {formatDate(market.closeAt)}
+        </div>
+        <div className="col-span-2 flex items-center justify-between rounded-md border border-zinc-800 bg-black px-3 py-2">
+          <span>Risc LP estimat</span>
+          <span className="font-semibold text-zinc-200">{market.liquidityRisk.toLocaleString('ro-RO')} mRON · {volumeToRisk.toFixed(1)}x</span>
         </div>
       </div>
 

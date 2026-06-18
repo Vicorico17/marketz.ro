@@ -53,6 +53,31 @@ export default function AdminPage() {
   const [resolveNotes, setResolveNotes] = useState<Record<string, string>>({});
 
   const markets = useMemo(() => snapshot?.markets || [], [snapshot]);
+  const riskPreview = useMemo(() => {
+    const outcomes = form.outcomes
+      .split('\n')
+      .map((outcome) => outcome.trim())
+      .filter(Boolean);
+    const rawProbabilities = form.probabilities
+      .split('\n')
+      .map((value) => Number(value.trim()) / 100)
+      .filter((value) => Number.isFinite(value) && value > 0);
+    const liquidity = Number(form.liquidity) || 140;
+    const probabilities = rawProbabilities.length === outcomes.length
+      ? rawProbabilities
+      : Array.from({ length: Math.max(outcomes.length, 1) }, () => 1 / Math.max(outcomes.length, 1));
+    const total = probabilities.reduce((sum, value) => sum + value, 0) || 1;
+    const normalized = probabilities.map((value) => value / total);
+    const lowestProbability = Math.max(Math.min(...normalized), 0.0001);
+
+    return {
+      liquidity,
+      outcomeCount: outcomes.length,
+      estimatedRisk: Math.round(liquidity * Math.log(1 / lowestProbability) * 100) / 100,
+      recommendedMaxTrade: Math.round(Math.max(5, liquidity * 0.25) * 100) / 100,
+      isSkewed: lowestProbability < 0.2,
+    };
+  }, [form.liquidity, form.outcomes, form.probabilities]);
 
   const loadMarkets = async () => {
     const response = await fetch('/api/markets');
@@ -269,6 +294,32 @@ export default function AdminPage() {
                   />
                 </Field>
               </div>
+              <div className="rounded-md border border-zinc-800 bg-black p-4 text-sm">
+                <div className="mb-3 font-semibold text-white">Preview lichiditate</div>
+                <div className="grid gap-2 text-zinc-400 sm:grid-cols-2">
+                  <div className="flex justify-between gap-3">
+                    <span>Outcome-uri</span>
+                    <span className="font-medium text-white">{riskPreview.outcomeCount}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span>Lichiditate b</span>
+                    <span className="font-medium text-white">{riskPreview.liquidity.toLocaleString('ro-RO')}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span>Risc LP estimat</span>
+                    <span className="font-medium text-white">{riskPreview.estimatedRisk.toLocaleString('ro-RO')} mRON</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span>Trade max recomandat</span>
+                    <span className="font-medium text-white">{riskPreview.recommendedMaxTrade.toLocaleString('ro-RO')} mRON</span>
+                  </div>
+                </div>
+                {riskPreview.isSkewed && (
+                  <div className="mt-3 rounded-md border border-amber-400/30 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">
+                    Probabilitățile sunt foarte dezechilibrate. Outcome-ul ieftin poate produce pierdere LP mare dacă se rezolvă câștigător.
+                  </div>
+                )}
+              </div>
               <Field label="Închidere">
                 <input
                   value={form.closeAt}
@@ -317,7 +368,9 @@ export default function AdminPage() {
                     <Link href={`/markets/${market.slug}`} className="text-lg font-semibold text-white hover:text-emerald-200">
                       {market.question}
                     </Link>
-                    <div className="mt-1 text-sm text-zinc-500">{market.volume.toLocaleString('ro-RO')} mRON · {market.tradeCount} trade-uri</div>
+                    <div className="mt-1 text-sm text-zinc-500">
+                      {market.volume.toLocaleString('ro-RO')} mRON · {market.tradeCount} trade-uri · {market.liquidityRisk.toLocaleString('ro-RO')} mRON risc LP
+                    </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {statuses.map((status) => (

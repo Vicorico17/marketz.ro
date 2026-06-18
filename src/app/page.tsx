@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Search, ShieldCheck, Sparkles, WalletCards } from 'lucide-react';
+import { BarChart3, Coins, Search, ShieldCheck, Sparkles, WalletCards } from 'lucide-react';
 import { MarketCard } from '@/components/MarketCard';
 import { PortfolioPanel } from '@/components/PortfolioPanel';
 import { WalletPanel } from '@/components/WalletPanel';
@@ -88,7 +88,7 @@ export default function Home() {
               Cumpără shares pe rezultate, urmărește probabilități în timp real și testează fluxul de wallet fără bani reali sau blockchain real.
             </p>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
                 <div className="flex items-center gap-2 text-sm text-zinc-400">
                   <BarChart3 className="h-4 w-4 text-emerald-300" />
@@ -98,7 +98,14 @@ export default function Home() {
               </div>
               <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
                 <div className="flex items-center gap-2 text-sm text-zinc-400">
-                  <WalletCards className="h-4 w-4 text-amber-300" />
+                  <Coins className="h-4 w-4 text-amber-300" />
+                  Risc LP demo
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">{snapshot?.totalLiquidityRisk.toLocaleString('ro-RO') || '0'} mRON</div>
+              </div>
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                  <WalletCards className="h-4 w-4 text-sky-300" />
                   Piețe deschise
                 </div>
                 <div className="mt-2 text-2xl font-bold text-white">{snapshot?.openMarkets || 0}</div>
