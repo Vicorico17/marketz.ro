@@ -1,6 +1,12 @@
 import type { CreateMarketInput } from '@/types/market';
 // Real-world questions, not factual claims about their future outcomes.
-// Neutral 50/50 seeds are illustrative and are not researched forecasts.
+// Stable illustrative probabilities, not researched forecasts.
+function exampleProbabilities(slug: string): number[] {
+  const hash = Array.from(slug).reduce((value, char) => (value * 31 + char.charCodeAt(0)) >>> 0, 0);
+  const percent = 22 + hash % 57;
+  const yes = (percent === 50 ? 53 : percent) / 100;
+  return [yes, 1 - yes];
+}
 const questions: Array<[string, CreateMarketInput['category'], string, string, string, string]> = [
   ['eur-ron-iunie-2027', 'economie', 'Va depăși EUR/RON 5,50 la BNR pe 30 iunie 2027?', '2027-06-29', 'Da dacă rata oficială EUR/RON din 30 iunie 2027 este strict peste 5,50. Dacă nu există publicație în acea zi, se folosește ultima zi lucrătoare anterioară.', 'BNR · https://www.bnr.ro/'],
   ['inflatie-iunie-2027', 'economie', 'Va scădea inflația anuală din România sub 4% în iunie 2027?', '2027-06-30', 'Se folosește prima publicare INS a ratei anuale IPC pentru iunie 2027 față de iunie 2026. O valoare exactă de 4% înseamnă Nu; revizuirile ulterioare nu modifică rezultatul.', 'INS, comunicatul IPC iunie 2027 · https://insse.ro/cms/'],
@@ -26,5 +32,5 @@ export const romaniaMarkets: Array<CreateMarketInput & { id: string; slug: strin
   description: `${rule} Dacă sursa necesară nu publică date suficiente în 90 de zile de la termenul evenimentului, exemplul se anulează; lipsa datelor nu dovedește un rezultat negativ.`,
   outcomes: ['Da', 'Nu'], closeAt: `${close}T21:59:00.000Z`,
   resolutionSource: source, tags: ['România', category], liquidity: 150,
-  startingProbabilities: [0.5, 0.5],
+  startingProbabilities: exampleProbabilities(slug),
 }));

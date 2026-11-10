@@ -1,30 +1,52 @@
-import Link from 'next/link';
-import { ArrowRight, Scale, Eye, Users } from 'lucide-react';
+import { PetitionResearch } from '@/components/PetitionResearch';
+import type { Metadata } from 'next';
+import { ArrowUpRight, Landmark, Scale, ScanEye, Sparkles } from 'lucide-react';
+import { SignatureForm } from '@/components/SignatureForm';
 import { getPetitionConfig } from '@/lib/petitionConfig';
-import { DemoMarkets } from '@/components/DemoMarkets';
+import { demands, petitionIntro, petitionTitle, petitionText, researchDate, sources } from '@/lib/campaign';
 export const dynamic = 'force-dynamic';
-export default function Home() {
-  const collecting = getPetitionConfig().enabled;
-  return <main>
-    <section className="border-b border-zinc-800">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-medium text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Predicții despre România · Inițiativă civică</div>
-        <h1 className="max-w-5xl text-balance text-4xl font-bold leading-tight tracking-tight sm:text-6xl lg:text-7xl">Ce urmează<br /><span className="text-emerald-300">pentru România?</span></h1>
-        <p className="mt-7 max-w-2xl text-lg leading-8 text-zinc-400">Economie, politică, infrastructură, sport și cultură. Explorează întrebări reale cu un simulator simplu și susține un cadru distinct pentru piețele de predicții: concurență, costuri transparente și reguli proporționale.</p>
-        <div className="mt-9 flex flex-wrap gap-3"><a href="#demo" className="inline-flex items-center gap-3 rounded-md bg-emerald-400 px-6 py-3.5 font-semibold text-black hover:bg-emerald-300">Explorează predicțiile <ArrowRight className="h-4 w-4" /></a><Link href="/petitie#sustinere" className="rounded-md border border-zinc-700 px-6 py-3.5 font-medium hover:bg-zinc-900">Susține petiția</Link></div>
-        <p className="mt-5 text-xs text-zinc-500">{collecting ? 'Nume, email și acord. Fără cont, CNP sau confirmare prin email.' : 'Proiect pentru consultare. Formularul de susținere se pregătește pentru lansare.'}</p>
+export const metadata: Metadata = { title: 'Semnează pentru un cadru distinct al piețelor de predicții' };
+export default function PetitionPage() {
+  const config = getPetitionConfig();
+  const paragraphs = petitionText.split('\n\n');
+  return <main className="campaign-surface">
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
+      <header className="mb-10 max-w-4xl sm:mb-14">
+        <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/[0.06] px-3.5 py-2 text-xs font-medium text-emerald-200"><Sparkles className="h-3.5 w-3.5" /> O inițiativă Marketz.ro</p>
+        <h1 className="text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.045em] sm:text-6xl">O piață liberă.<br /><span className="text-emerald-300">Un cadru distinct.</span></h1>
+        <p className="mt-6 max-w-2xl text-base leading-8 text-zinc-400 sm:text-lg">Cerem recunoașterea piețelor de predicții ca o categorie distinctă de pariurile convenționale, cu fiscalitate proporțională și costuri la vedere.</p>
+      </header>
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start lg:gap-12">
+        <aside className="order-first lg:sticky lg:top-6 lg:order-last"><SignatureForm enabled={config.enabled} organizer={config.organizer} /></aside>
+        <div className="min-w-0 space-y-10">
+          <section aria-label="Ce susții prin semnare" className="grid gap-3 sm:grid-cols-3">
+            {[
+              { icon: Landmark, title: 'Reguli distincte', text: 'O categorie legală adaptată mecanismului pieței.' },
+              { icon: Scale, title: 'Taxe proporționale', text: 'Un regim fiscal justificat prin costuri și riscuri.' },
+              { icon: ScanEye, title: 'Costuri transparente', text: 'Concurență și alegeri informate pentru participanți.' },
+            ].map(({ icon: Icon, title, text }) => <div key={title} className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5"><Icon className="mb-4 h-5 w-5 text-emerald-300" /><h2 className="text-sm font-semibold text-zinc-100">{title}</h2><p className="mt-2 text-xs leading-6 text-zinc-400">{text}</p></div>)}
+          </section>
+          <article id="textul-petitiei" className="scroll-mt-8 overflow-hidden rounded-3xl border border-white/[0.08] bg-zinc-950/80">
+            <div className="border-b border-white/[0.07] px-6 py-5 sm:px-8"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-semibold text-emerald-300">Textul integral al petiției</h2><span className="text-xs text-zinc-500">Versiunea 2 · {researchDate}</span></div></div>
+            <div className="px-6 py-8 sm:px-8">
+              <h3 className="text-2xl font-semibold leading-snug tracking-tight">{petitionTitle}</h3>
+              <p className="mt-5 border-l-2 border-emerald-300/40 pl-4 text-sm leading-7 text-zinc-400">{paragraphs[2]}</p>
+              <p className="mt-6 text-base leading-8 text-zinc-300">{petitionIntro}</p>
+              <div className="mt-8 divide-y divide-white/[0.07]">{demands.map((d, i) => <section key={d.title} className="py-7 first:pt-0"><div className="mb-3 flex items-start gap-3"><span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-300/10 font-mono text-xs text-emerald-300">{String(i + 1).padStart(2, '0')}</span><h4 className="text-lg font-semibold leading-7 tracking-tight">{d.title}</h4></div><p className="text-sm leading-8 text-zinc-400">{d.text}</p></section>)}</div>
+              <div className="mt-2 space-y-4 border-t border-white/[0.07] pt-6 text-sm leading-7 text-zinc-400"><p>{paragraphs[paragraphs.length - 3]}</p><p>{paragraphs[paragraphs.length - 2]}</p></div>
+              <div className="mt-8 border-t border-white/[0.07] pt-6"><h4 className="text-sm font-semibold">Sursele petiției</h4><ul className="mt-4 space-y-3">{Object.values(sources).map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer" className="group inline-flex items-start gap-2 text-xs leading-6 text-zinc-400 transition hover:text-emerald-300">{source.title}<ArrowUpRight className="mt-1 h-3 w-3 shrink-0" /></a></li>)}</ul></div>
+            </div>
+          </article>
+          <section aria-labelledby="context-costuri" className="rounded-3xl border border-white/[0.08] bg-gradient-to-br from-emerald-300/[0.06] to-transparent p-6 sm:p-8">
+            <p className="text-xs font-medium uppercase tracking-widest text-emerald-300">De ce cerem o schimbare</p><h2 id="context-costuri" className="mt-3 text-2xl font-semibold tracking-tight">Costul de intrare contează.</h2>
+            <div className="my-6 grid gap-5 sm:grid-cols-2"><div><p className="text-3xl font-semibold tracking-tight">300.000 €<span className="ml-1 text-sm font-normal text-zinc-500">/ an</span></p><p className="mt-2 text-xs text-zinc-400">Licență online, clasa 1</p></div><div><p className="text-3xl font-semibold tracking-tight">30%<span className="ml-2 text-sm font-normal text-zinc-500">din venitul relevant</span></p><p className="mt-2 text-xs text-zinc-400">Autorizație: minimum 480.000 € / an</p></div></div>
+            <p className="text-sm leading-7 text-zinc-400">Acestea sunt prevederile din forma OUG 77/2009 consultată la 25 februarie 2026, nu toate obligațiile unui operator. Art. 1¹ distinge deja venitul din comisioane pentru mecanismele relevante. Cerem evaluarea pragurilor fixe și minime pentru alternative eficiente, inclusiv modele cu comision de tranzacționare zero.</p>
+            <a href={sources.gambling.url} className="mt-4 inline-block text-xs text-emerald-300 underline decoration-emerald-300/30 underline-offset-4">OUG 77/2009 — anexa I.J și II.J</a>
+          </section>
+          <section className="px-1"><h2 className="text-xl font-semibold tracking-tight">Ce se întâmplă după semnare?</h2><p className="mt-4 text-sm leading-8 text-zinc-400">Strângem sprijin pentru o petiție către autorități, o consultare publică și un proiect asumat de Guvern sau parlamentari. Art. 74 alin. (2) din Constituție exclude problemele fiscale din inițiativa legislativă cetățenească: numărul de semnături nu modifică automat legea.</p><p className="mt-4 text-sm leading-8 text-zinc-400">Solicitarea unui cadru distinct este o propunere de reformă, nu descrierea unei exceptări existente. În România, legea include deja pariurile în contrapartidă. Nu am demonstrat un monopol privat și nu presupunem că toate piețele de predicții sunt exceptate de la reglementare.</p></section>
+          <PetitionResearch />
+        </div>
       </div>
-    </section>
-    <section id="demo" className="border-t border-zinc-800 bg-zinc-950/50"><div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"><div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">Evenimente reale · Tranzacții simulate</p><h2 className="text-2xl font-bold">Predicții despre România</h2><p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-400">Întrebări verificabile, surse de rezoluție și credite gratuite. Procentele de pornire sunt ilustrative; nu există bani reali sau premii.</p></div><Link href="/cum-functioneaza" className="text-sm text-emerald-300 underline">Explicația pe scurt →</Link></div><DemoMarkets /></div></section>
-    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <h2 className="text-2xl font-bold">Trei principii pentru reguli mai bune</h2>
-      <div className="mt-7 grid gap-4 md:grid-cols-3">{[
-        { icon: Users, title: 'Concurență deschisă', text: 'Evaluarea barierelor de intrare și spațiu pentru alternative eficiente, inclusiv modele fără comision de tranzacționare.' },
-        { icon: Eye, title: 'Costuri la vedere', text: 'Comisioane, marje în cote și condiții explicate înainte de participare. Zero comision nu înseamnă automat zero cost total.' },
-        { icon: Scale, title: 'Fiscalitate proporțională', text: 'Analiza separată a taxelor operatorilor și ale participanților, în funcție de mecanismul economic și de riscuri.' },
-      ].map(({ icon: Icon, title, text }) => <article key={title} className="rounded-xl border border-zinc-800 bg-zinc-950 p-6"><Icon className="mb-5 h-5 w-5 text-emerald-300" /><h3 className="text-lg font-semibold">{title}</h3><p className="mt-3 text-sm leading-7 text-zinc-400">{text}</p></article>)}</div>
-    </section>
-    <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8"><div className="rounded-xl border border-zinc-800 p-6 sm:p-8"><h2 className="text-2xl font-bold">Ce poate schimba o petiție?</h2><p className="mt-4 max-w-3xl leading-7 text-zinc-400">Poate cere o consultare publică și poate construi sprijin pentru un proiect al Guvernului sau al parlamentarilor. Semnăturile nu modifică automat legea. În România, schimbările fiscale nu pot urma procedura inițiativei legislative cetățenești.</p><Link href="/cercetare" className="mt-5 inline-block text-sm font-semibold text-emerald-300">Traseul legal și sursele oficiale →</Link></div></section>
-
+    </div>
   </main>;
 }

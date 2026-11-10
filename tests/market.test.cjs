@@ -99,3 +99,13 @@ test('rapidly created markets have distinct identifiers', () => {
   const a = store.createMarket(input()), b = store.createMarket(input());
   assert.notEqual(a.id, b.id); assert.notEqual(a.slug, b.slug);
 });
+test('illustrative Romanian odds are varied and match the initialized market prices', () => {
+  const { romaniaMarkets } = require('../src/lib/romaniaMarkets.ts');
+  assert.ok(new Set(romaniaMarkets.map(m => m.startingProbabilities[0])).size > 10);
+  for (const seed of romaniaMarkets) {
+    const { market } = store.getMarket(seed.slug);
+    assert.notEqual(seed.startingProbabilities[0], 0.5);
+    assert.ok(Math.abs(Object.values(market.probabilities).reduce((a, b) => a + b, 0) - 1) < 1e-10);
+    assert.ok(Math.abs(market.probabilities.da - seed.startingProbabilities[0]) < 1e-6);
+  }
+});

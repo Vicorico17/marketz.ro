@@ -66,7 +66,7 @@ export default function MarketDetailPage() {
   if (!data) {
     return (
       <main className="min-h-screen bg-black p-8">
-        <Link href="/" className="text-sm font-semibold text-emerald-300">
+        <Link href="/exemplu" className="text-sm font-semibold text-emerald-300">
           Înapoi la piețe
         </Link>
         <div className="mt-8 rounded-lg border border-zinc-800 bg-zinc-950 p-8 text-zinc-400">Piața nu este disponibilă. Verifică adresa sau conexiunea.</div>
@@ -81,7 +81,7 @@ export default function MarketDetailPage() {
     <main className="min-h-screen bg-black">
       <header className="border-b border-zinc-900">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-300 transition hover:text-white">
+          <Link href="/exemplu" className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-300 transition hover:text-white">
             <ArrowLeft className="h-4 w-4" />
             Înapoi la piețe
           </Link>

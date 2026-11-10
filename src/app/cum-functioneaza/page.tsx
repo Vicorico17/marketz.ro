@@ -15,6 +15,6 @@ export default function LearnPage() {
     <MarginExplainer />
     <p className="text-sm text-zinc-400">Context pentru marja implicită a cotelor: <a href={sources.margin.url} className="text-emerald-300 underline">raportul CMA, anexe și glosar ↗</a></p>
     <section className="rounded-xl border border-zinc-800 p-6"><h2 className="text-2xl font-bold">Costuri și limite ale demo-ului</h2><ul className="mt-4 list-disc space-y-3 pl-5 leading-7 text-zinc-400"><li>Comision explicit: 0. Impactul asupra prețului poate fi semnificativ.</li><li>mRON nu este RON, activ digital sau instrument financiar. Nu există premii cu valoare reală.</li><li>Adresa generată identifică o sesiune demo; nu dovedește identitatea și nu este o autentificare sigură.</li><li>Datele sunt păstrate în memoria serverului și se pot reseta. O instalare pe mai multe servere nu are un registru comun.</li><li>La anulare, simulatorul returnează costul de achiziție rămas al pozițiilor deschise. Tranzacțiile deja închise nu sunt anulate.</li><li>Identificatorii tranzacțiilor și blocurile sunt simulări. Rezoluția este administrativă, fără verificare independentă pe un lanț de blocuri.</li></ul></section>
-    <Link href="/" className="inline-block rounded-md bg-emerald-400 px-5 py-3 font-semibold text-black">Încearcă simulatorul →</Link>
+    <Link href="/exemplu" className="inline-block rounded-md bg-emerald-400 px-5 py-3 font-semibold text-black">Încearcă simulatorul →</Link>
   </ArticleShell>;
 }
