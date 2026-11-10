@@ -19,28 +19,36 @@ export function useMockWallet() {
   const [address, setAddress] = useState<string | null>(null);
   const [wallet, setWallet] = useState<WalletAccount | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadWallet = useCallback(async (nextAddress: string) => {
     setIsLoading(true);
+    setError(null);
     try {
       const response = await fetch(`/api/wallets/${nextAddress}`);
       const data = await response.json();
+      if (!response.ok || !data.wallet) throw new Error(data.error || 'Contul demo nu este disponibil');
       setWallet(data.wallet);
       setAddress(data.wallet.address);
-      localStorage.setItem(WALLET_KEY, data.wallet.address);
+      try { localStorage.setItem(WALLET_KEY, data.wallet.address); } catch { /* Use this session only. */ }
       return data.wallet as WalletAccount;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Conexiunea a eșuat');
+      return null;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   const connect = useCallback(async () => {
-    const nextAddress = localStorage.getItem(WALLET_KEY) || randomAddress();
+    let saved: string | null = null;
+    try { saved = localStorage.getItem(WALLET_KEY); } catch { /* Session still works without storage. */ }
+    const nextAddress = saved && /^0x[0-9a-fA-F]{40}$/.test(saved) ? saved : randomAddress();
     return loadWallet(nextAddress);
   }, [loadWallet]);
 
   const disconnect = useCallback(() => {
-    localStorage.removeItem(WALLET_KEY);
+    try { localStorage.removeItem(WALLET_KEY); } catch { /* Storage may be disabled. */ }
     setAddress(null);
     setWallet(null);
   }, []);
@@ -57,6 +65,7 @@ export function useMockWallet() {
       return null;
     }
     setIsLoading(true);
+    setError(null);
     try {
       const response = await fetch(`/api/wallets/${address}/faucet`, {
         method: 'POST',
@@ -64,16 +73,21 @@ export function useMockWallet() {
         body: JSON.stringify({ amount: 250 }),
       });
       const data = await response.json();
+      if (!response.ok || !data.wallet) throw new Error(data.error || 'Contul demo nu este disponibil');
       setWallet(data.wallet);
       return data.wallet as WalletAccount;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Conexiunea a eșuat');
+      return null;
     } finally {
       setIsLoading(false);
     }
   }, [address]);
 
   useEffect(() => {
-    const saved = localStorage.getItem(WALLET_KEY);
-    if (saved) {
+    let saved: string | null = null;
+    try { saved = localStorage.getItem(WALLET_KEY); } catch { return; }
+    if (saved && /^0x[0-9a-fA-F]{40}$/.test(saved)) {
       void loadWallet(saved);
     }
   }, [loadWallet]);
@@ -82,6 +96,7 @@ export function useMockWallet() {
     address,
     wallet,
     isLoading,
+    error,
     connect,
     disconnect,
     refresh,

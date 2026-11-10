@@ -19,6 +19,7 @@ interface PortfolioData {
 
 export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
   const [data, setData] = useState<PortfolioData | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!address) {
@@ -26,9 +27,11 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
       return;
     }
 
+    setData(null);
+    setError(false);
     let isMounted = true;
     fetch(`/api/wallets/${address}/portfolio`)
-      .then((response) => response.json())
+      .then((response) => { if (!response.ok) throw new Error('Portfolio unavailable'); return response.json(); })
       .then((nextData) => {
         if (isMounted) {
           setData(nextData);
@@ -37,6 +40,7 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
       .catch(() => {
         if (isMounted) {
           setData(null);
+          setError(true);
         }
       });
 
@@ -53,6 +57,8 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
     );
   }
 
+  if (error) return <div role="alert" className="rounded-lg border border-zinc-800 p-5 text-sm text-red-300">Portofoliul nu a putut fi încărcat. Reîncarcă pagina pentru a reîncerca.</div>;
+
   if (!data) {
     return <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-400">Se încarcă portofoliul...</div>;
   }
@@ -60,7 +66,7 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
   const markValue = data.positions.reduce((sum, position) => sum + position.markValue, 0);
   const costBasis = data.positions.reduce((sum, position) => sum + position.costBasis, 0);
   const realizedPnl = data.positions.reduce((sum, position) => sum + (position.realizedPnl || 0), 0);
-  const activePositions = data.positions.filter((position) => position.shares > 0);
+  const activePositions = data.positions.filter((position) => position.shares > 0 && !position.isResolved);
 
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5">

@@ -1,10 +1,12 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { createMarket, getSnapshot } from '@/lib/demoStore';
 import type { CreateMarketInput } from '@/types/market';
 
 function isAdmin(request: Request) {
-  const expected = process.env.ADMIN_MOCK_KEY || 'marketz-admin';
-  return request.headers.get('x-admin-key') === expected;
+  const expected = process.env.ADMIN_MOCK_KEY || (process.env.NODE_ENV === 'development' ? 'marketz-admin' : '');
+  return Boolean(expected) && request.headers.get('x-admin-key') === expected;
 }
 
 export async function GET() {

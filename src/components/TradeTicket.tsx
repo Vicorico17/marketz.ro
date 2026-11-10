@@ -81,8 +81,9 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
   useEffect(() => {
     let isMounted = true;
     setError(null);
+    setQuote(null);
 
-    if (side === 'sell' && (!wallet || ownedShares <= 0 || shares > ownedShares)) {
+    if (market.status !== 'open' || (side === 'sell' && (!wallet || ownedShares <= 0 || shares > ownedShares))) {
       setQuote(null);
       return () => {
         isMounted = false;
@@ -115,7 +116,7 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
     return () => {
       isMounted = false;
     };
-  }, [amount, market.slug, outcomeId, ownedShares, shares, side, wallet]);
+  }, [amount, market.slug, market.status, market.updatedAt, outcomeId, ownedShares, shares, side, wallet]);
 
   const placeTrade = async () => {
     setError(null);
@@ -160,6 +161,9 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
   const disabled =
     market.status !== 'open' ||
     isSubmitting ||
+    !quote ||
+    Date.parse(market.closeAt) <= Date.now() ||
+    Boolean(side === 'buy' && wallet && amount > wallet.balance) ||
     !Number.isFinite(tradeValue) ||
     tradeValue <= 0 ||
     Boolean(side === 'sell' && wallet && (ownedShares <= 0 || shares > ownedShares));
@@ -168,7 +172,7 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
     <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5">
       <div className="mb-5 flex items-center gap-2">
         <ReceiptText className="h-5 w-5 text-emerald-300" />
-        <h2 className="text-lg font-semibold text-white">Trade ticket</h2>
+        <h2 className="text-lg font-semibold text-white">Tranzacție demo</h2>
       </div>
 
       <div className="mb-5 grid grid-cols-2 rounded-md border border-zinc-800 bg-black p-1">
@@ -213,11 +217,12 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
         ))}
       </div>
 
-      <label className="mb-2 block text-sm font-medium text-zinc-300">
-        {side === 'buy' ? 'Sumă demo' : 'Shares de vândut'}
+      <label htmlFor="trade-amount" className="mb-2 block text-sm font-medium text-zinc-300">
+        {side === 'buy' ? 'Sumă demo' : 'Unități de vândut'}
       </label>
       <div className="flex items-center gap-2">
         <input
+          id="trade-amount"
           type="number"
           min={side === 'buy' ? 1 : 0}
           max={side === 'buy' ? 5000 : ownedShares}
@@ -226,10 +231,11 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
           onChange={(event) => (side === 'buy' ? setAmount(Number(event.target.value)) : setShares(Number(event.target.value)))}
           className="h-11 min-w-0 flex-1 rounded-md border border-zinc-700 bg-black px-3 text-white outline-none focus:border-emerald-400"
         />
-        <span className="shrink-0 text-sm text-zinc-400">{side === 'buy' ? 'mRON' : 'shares'}</span>
+        <span className="shrink-0 text-sm text-zinc-400">{side === 'buy' ? 'mRON' : 'unități'}</span>
       </div>
       {side === 'buy' ? (
         <input
+          aria-label="Sumă demo rapidă"
           type="range"
           min={1}
           max={500}
@@ -239,7 +245,7 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
         />
       ) : (
         <div className="mt-3 flex items-center justify-between gap-3 text-xs text-zinc-500">
-          <span>Disponibil: {ownedShares.toLocaleString('ro-RO')} shares</span>
+          <span>Disponibil: {ownedShares.toLocaleString('ro-RO')} unități</span>
           <button
             onClick={() => setShares(ownedShares)}
             disabled={ownedShares <= 0}
@@ -252,11 +258,11 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
 
       <div className="my-5 rounded-md border border-zinc-800 bg-black p-4 text-sm">
         <div className="mb-2 flex justify-between gap-3 text-zinc-400">
-          <span>Outcome</span>
+          <span>Rezultat</span>
           <span className="font-medium text-white">{selectedOutcome?.label}</span>
         </div>
         <div className="mb-2 flex justify-between gap-3 text-zinc-400">
-          <span>{side === 'buy' ? 'Shares estimate' : 'Încasezi estimat'}</span>
+          <span>{side === 'buy' ? 'Unități estimate' : 'Încasezi estimat'}</span>
           <span className="font-medium text-white">
             {quote ? (side === 'buy' ? quote.shares.toLocaleString('ro-RO') : `${quote.amount.toLocaleString('ro-RO')} mRON`) : '-'}
           </span>
@@ -279,18 +285,18 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
 
       {side === 'sell' && wallet && ownedShares <= 0 && (
         <div className="mb-4 rounded-md border border-zinc-800 bg-black p-3 text-sm text-zinc-400">
-          Nu ai shares pe outcome-ul selectat.
+          Nu ai unități pentru rezultatul selectat.
         </div>
       )}
       {hasHighImpact && (
         <div className="mb-4 rounded-md border border-amber-400/40 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">
-          Trade cu impact mare asupra probabilității. Pentru lichiditate mică, împarte ordinul în sume mai mici.
+          Această tranzacție modifică mult probabilitatea. Reducerea sumei reduce impactul; împărțirea aceleiași sume în mai multe ordine nu elimină impactul cumulat.
         </div>
       )}
       {error && <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">{error}</div>}
       {successTx && (
         <div className="mb-4 rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-200">
-          Tx mock: <span className="font-mono">{successTx.slice(0, 18)}...</span>
+          Tranzacție demo înregistrată.
         </div>
       )}
 
@@ -300,7 +306,7 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
         className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-emerald-500 px-4 text-sm font-bold text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-        {wallet ? (side === 'buy' ? 'Cumpără shares' : 'Vinde shares') : `Conectează și ${side === 'buy' ? 'cumpără' : 'vinde'}`}
+        {wallet ? (side === 'buy' ? 'Cumpără unități' : 'Vinde unități') : `Conectează și ${side === 'buy' ? 'cumpără' : 'vinde'}`}
       </button>
     </div>
   );

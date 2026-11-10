@@ -7,7 +7,7 @@ export function categoryLabel(category: MarketCategory) {
     sport: 'Sport',
     locale: 'Locale',
     cultura: 'Cultură',
-    tech: 'Tech',
+    tech: 'Tehnologie',
     meteo: 'Meteo',
   };
   return labels[category];

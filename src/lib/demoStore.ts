@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { romaniaMarkets } from '@/lib/romaniaMarkets';
 import {
   addPrices,
   createOutcomeId,
@@ -86,6 +88,7 @@ function makeMarket(input: CreateMarketInput & { id: string; slug?: string; volu
 
 function seedMarkets() {
   return [
+    ...romaniaMarkets.map(makeMarket),
     makeMarket({
       id: 'mkt-ron-eur-2026',
       slug: 'eur-ron-peste-5-15-la-final-de-2026',
@@ -99,8 +102,6 @@ function seedMarkets() {
       resolutionSource: 'Cursul oficial BNR EUR/RON.',
       liquidity: 180,
       startingProbabilities: [0.42, 0.58],
-      volume: 13240,
-      tradeCount: 184,
     }),
     makeMarket({
       id: 'mkt-inflatie-2026',
@@ -115,8 +116,6 @@ function seedMarkets() {
       resolutionSource: 'Comunicatul INS privind IPC decembrie 2026.',
       liquidity: 160,
       startingProbabilities: [0.36, 0.64],
-      volume: 8750,
-      tradeCount: 121,
     }),
     makeMarket({
       id: 'mkt-superliga-2027',
@@ -127,12 +126,10 @@ function seedMarkets() {
       category: 'sport',
       tags: ['SuperLiga', 'fotbal'],
       outcomes: ['Da', 'Nu'],
-      closeAt: futureDate(9, 1, 18),
+      closeAt: '2027-01-31T21:59:00.000Z',
       resolutionSource: 'Clasamentul oficial LPF.',
       liquidity: 130,
       startingProbabilities: [0.31, 0.69],
-      volume: 6620,
-      tradeCount: 94,
     }),
     makeMarket({
       id: 'mkt-bucuresti-metro-2026',
@@ -147,15 +144,13 @@ function seedMarkets() {
       resolutionSource: 'Comunicate Metrorex și verificare publică a operării comerciale.',
       liquidity: 125,
       startingProbabilities: [0.47, 0.53],
-      volume: 5125,
-      tradeCount: 73,
     }),
     makeMarket({
       id: 'mkt-alegeri-locale-bucuresti',
       slug: 'bucuresti-va-avea-primar-general-nou-inainte-de-decembrie-2026',
       question: 'Va avea Bucureștiul un primar general nou înainte de 1 decembrie 2026?',
       description:
-        'Piața se rezolvă "Da" dacă o altă persoană decât titularul funcției la crearea pieței depune jurământul sau exercită mandatul ca primar general înainte de termen.',
+        'Piața se rezolvă "Da" dacă între 10 noiembrie 2026 și 1 decembrie 2026, ora 00:00 Europe/Bucharest, un primar general nou ales depune jurământul. Nu se includ interimatele sau delegările temporare.',
       category: 'politica',
       tags: ['București', 'administrație'],
       outcomes: ['Da', 'Nu'],
@@ -163,8 +158,6 @@ function seedMarkets() {
       resolutionSource: 'Hotărâri oficiale, comunicate PMB și rezultate electorale validate.',
       liquidity: 150,
       startingProbabilities: [0.54, 0.46],
-      volume: 14990,
-      tradeCount: 205,
     }),
     makeMarket({
       id: 'mkt-eurovision-romania',
@@ -179,8 +172,6 @@ function seedMarkets() {
       resolutionSource: 'Anunț oficial TVR/EBU.',
       liquidity: 100,
       startingProbabilities: [0.28, 0.72],
-      volume: 2980,
-      tradeCount: 49,
     }),
   ];
 }
@@ -199,10 +190,14 @@ function getState() {
 }
 
 function normalizeAddress(address: string) {
+  if (typeof address !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(address.trim())) {
+    throw new Error('Adresă demo invalidă');
+  }
   return address.trim().toLowerCase();
 }
 
 function publicMarket(market: Market): MarketWithPrices {
+  if (market.status === 'open' && Date.parse(market.closeAt) <= Date.now()) market.status = 'closed';
   return addPrices({
     ...market,
     participantCount: getParticipants(market.id).length,
@@ -254,7 +249,7 @@ export function getMarket(slugOrId: string) {
 export function createMarket(input: CreateMarketInput) {
   const state = getState();
   validateMarketInput(input);
-  const id = `mkt-${Date.now().toString(36)}`;
+  const id = `mkt-${randomUUID()}`;
   const market = makeMarket({
     ...input,
     id,
@@ -266,18 +261,22 @@ export function createMarket(input: CreateMarketInput) {
 }
 
 function validateMarketInput(input: CreateMarketInput) {
-  if (!input.question || input.question.trim().length < 12) {
+  if (typeof input.question !== 'string' || input.question.trim().length < 12 || input.question.length > 300) {
     throw new Error('Question must be at least 12 characters');
   }
-  if (!input.description || input.description.trim().length < 30) {
+  if (typeof input.description !== 'string' || input.description.trim().length < 30 || input.description.length > 5000) {
     throw new Error('Description must be at least 30 characters');
   }
-  if (!input.resolutionSource || input.resolutionSource.trim().length < 20) {
+  if (typeof input.resolutionSource !== 'string' || input.resolutionSource.trim().length < 20 || input.resolutionSource.length > 2000) {
     throw new Error('Resolution source must be specific');
   }
   if (!Array.isArray(input.outcomes) || input.outcomes.length < 2 || input.outcomes.length > 5) {
     throw new Error('Markets need between 2 and 5 outcomes');
   }
+  if (!['politica', 'economie', 'sport', 'locale', 'cultura', 'tech', 'meteo'].includes(input.category)) throw new Error('Categorie invalidă');
+  if (input.outcomes.some((label) => typeof label !== 'string' || !slugify(label) || label.length > 100)) throw new Error('Rezultat invalid');
+  if (input.tags !== undefined && (!Array.isArray(input.tags) || input.tags.length > 12 || input.tags.some((tag) => typeof tag !== 'string' || tag.length > 60))) throw new Error('Etichete invalide');
+  if (input.startingProbabilities !== undefined && (!Array.isArray(input.startingProbabilities) || input.startingProbabilities.some((p) => !Number.isFinite(p) || p <= 0))) throw new Error('Probabilitățile trebuie să fie pozitive');
   const uniqueOutcomes = new Set(input.outcomes.map((outcome) => createOutcomeId(outcome, 0)));
   if (uniqueOutcomes.size !== input.outcomes.length) {
     throw new Error('Outcome labels must be unique');
@@ -304,7 +303,37 @@ export function updateMarket(slugOrId: string, updates: Partial<Pick<Market, 'st
     throw new Error('Market not found');
   }
 
-  Object.assign(market, updates, { updatedAt: now(), chain: { ...market.chain, lastTxHash: mockTxHash() } });
+  if (market.status === 'resolved' || market.status === 'voided') {
+    throw new Error('O piață finalizată nu mai poate fi modificată');
+  }
+  const clean = Object.fromEntries(Object.entries(updates).filter(([, value]) => value !== undefined));
+  if (clean.status !== undefined && !['draft', 'open', 'closed', 'voided'].includes(String(clean.status))) {
+    throw new Error('Status invalid');
+  }
+  if (clean.closeAt !== undefined && (typeof clean.closeAt !== 'string' || !Number.isFinite(Date.parse(clean.closeAt)))) {
+    throw new Error('Data închiderii este invalidă');
+  }
+  for (const field of ['description', 'resolutionSource'] as const) {
+    if (clean[field] !== undefined && (typeof clean[field] !== 'string' || !String(clean[field]).trim())) {
+      throw new Error('Descrierea și sursa nu pot fi goale');
+    }
+  }
+  const positions = getState().positions.filter((position) => position.marketId === market.id);
+  if (positions.length && ['closeAt', 'description', 'resolutionSource'].some((field) => clean[field] !== undefined && clean[field] !== market[field as keyof Market])) {
+    throw new Error('Regulile nu pot fi modificate după prima tranzacție');
+  }
+  if (positions.length && clean.status === 'draft') throw new Error('O piață tranzacționată nu poate reveni la ciornă');
+  if (clean.status === 'voided') {
+    for (const position of positions) {
+      const wallet = getState().wallets.find((account) => account.address === position.walletAddress);
+      if (wallet) wallet.balance = roundMoney(wallet.balance + position.costBasis);
+      position.shares = 0;
+      position.costBasis = 0;
+      position.averagePrice = 0;
+      position.updatedAt = now();
+    }
+  }
+  Object.assign(market, clean, { updatedAt: now(), chain: { ...market.chain, lastTxHash: mockTxHash() } });
   return publicMarket(market);
 }
 
@@ -317,8 +346,11 @@ export function resolveMarket(slugOrId: string, input: ResolveMarketInput) {
   if (!market.outcomes.some((outcome) => outcome.id === input.outcomeId)) {
     throw new Error('Outcome not found');
   }
-  if (market.status === 'resolved') {
-    throw new Error('Market is already resolved');
+  if (market.status === 'resolved' || market.status === 'voided') {
+    throw new Error('Market is already finalized');
+  }
+  if (typeof input.notes !== 'string' || input.notes.trim().length < 10) {
+    throw new Error('Adaugă o justificare a rezultatului (minimum 10 caractere)');
   }
 
   market.status = 'resolved';
@@ -329,13 +361,19 @@ export function resolveMarket(slugOrId: string, input: ResolveMarketInput) {
   market.chain = { ...market.chain, lastTxHash: mockTxHash() };
 
   state.positions
-    .filter((position) => position.marketId === market.id && position.outcomeId === input.outcomeId)
+    .filter((position) => position.marketId === market.id)
     .forEach((position) => {
       const wallet = state.wallets.find((account) => account.address === position.walletAddress);
+      const payout = position.outcomeId === input.outcomeId ? roundMoney(position.shares) : 0;
       if (wallet) {
-        wallet.balance = roundMoney(wallet.balance + position.shares);
+        wallet.balance = roundMoney(wallet.balance + payout);
         wallet.lastSeenAt = now();
       }
+      position.realizedPnl = roundMoney(position.realizedPnl + payout - position.costBasis);
+      position.shares = 0;
+      position.costBasis = 0;
+      position.averagePrice = 0;
+      position.updatedAt = now();
     });
 
   return publicMarket(market);
@@ -364,6 +402,7 @@ export function getOrCreateWallet(address: string) {
 }
 
 export function faucetWallet(address: string, amount = 250) {
+  if (!Number.isFinite(amount) || amount < 1 || amount > 1000) throw new Error('Suma demo trebuie să fie între 1 și 1000');
   const wallet = getOrCreateWallet(address);
   wallet.balance = roundMoney(wallet.balance + Math.min(Math.max(amount, 1), 1000));
   wallet.lastSeenAt = now();
@@ -375,6 +414,8 @@ export function getQuote(slugOrId: string, outcomeId: string, amount: number, si
   if (!market) {
     throw new Error('Market not found');
   }
+  if (publicMarket(market).status !== 'open') throw new Error('Piața este închisă');
+  if (side !== 'buy' && side !== 'sell') throw new Error('Tip de tranzacție invalid');
   return side === 'sell' ? quoteSell(market, outcomeId, amount) : quoteBuy(market, outcomeId, amount);
 }
 
@@ -393,6 +434,7 @@ export function placeTrade(input: PlaceTradeInput) {
   }
 
   const side = input.side || 'buy';
+  if (side !== 'buy' && side !== 'sell') throw new Error('Tip de tranzacție invalid');
   const wallet = getOrCreateWallet(input.walletAddress);
   const outcome = market.outcomes.find((candidate) => candidate.id === input.outcomeId);
   if (!outcome) {

@@ -113,6 +113,7 @@ export function quoteBuy(market: Market, outcomeId: string, amount: number): Tra
     throw new Error(`Trade amount must be between ${MIN_SPEND} and ${MAX_SPEND}`);
   }
 
+  amount = roundMoney(amount);
   const probabilitiesBefore = probabilitiesFor(market.outcomes, market.quantities, market.liquidity);
   let low = 0;
   let high = Math.max(amount / Math.max(probabilitiesBefore[outcomeId], 0.01), 1);
@@ -163,6 +164,7 @@ export function quoteSell(market: Market, outcomeId: string, shares: number): Tr
   }
 
   const probabilitiesBefore = probabilitiesFor(market.outcomes, market.quantities, market.liquidity);
+  shares = roundShares(shares);
   const amount = proceedsFromSellingShares(market, outcomeId, shares);
   const nextQuantities = {
     ...market.quantities,

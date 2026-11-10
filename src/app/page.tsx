@@ -1,177 +1,30 @@
-'use client';
-
-import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Coins, Search, ShieldCheck, Sparkles, WalletCards } from 'lucide-react';
-import { MarketCard } from '@/components/MarketCard';
-import { PortfolioPanel } from '@/components/PortfolioPanel';
-import { WalletPanel } from '@/components/WalletPanel';
-import { useMockWallet } from '@/hooks/useMockWallet';
-import { categoryLabel } from '@/lib/labels';
-import type { MarketCategory, MarketSnapshot } from '@/types/market';
-
-const categories: Array<'all' | MarketCategory> = ['all', 'politica', 'economie', 'sport', 'locale', 'cultura', 'tech', 'meteo'];
-
+import { ArrowRight, Scale, Eye, Users } from 'lucide-react';
+import { getPetitionConfig } from '@/lib/petitionConfig';
+import { DemoMarkets } from '@/components/DemoMarkets';
+export const dynamic = 'force-dynamic';
 export default function Home() {
-  const [snapshot, setSnapshot] = useState<MarketSnapshot | null>(null);
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<'all' | MarketCategory>('all');
-  const [isLoading, setIsLoading] = useState(true);
-  const walletState = useMockWallet();
+  const collecting = getPetitionConfig().enabled;
+  return <main>
+    <section className="border-b border-zinc-800">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-medium text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Predicții despre România · Inițiativă civică</div>
+        <h1 className="max-w-5xl text-balance text-4xl font-bold leading-tight tracking-tight sm:text-6xl lg:text-7xl">Ce urmează<br /><span className="text-emerald-300">pentru România?</span></h1>
+        <p className="mt-7 max-w-2xl text-lg leading-8 text-zinc-400">Economie, politică, infrastructură, sport și cultură. Explorează întrebări reale cu un simulator simplu și susține un cadru distinct pentru piețele de predicții: concurență, costuri transparente și reguli proporționale.</p>
+        <div className="mt-9 flex flex-wrap gap-3"><a href="#demo" className="inline-flex items-center gap-3 rounded-md bg-emerald-400 px-6 py-3.5 font-semibold text-black hover:bg-emerald-300">Explorează predicțiile <ArrowRight className="h-4 w-4" /></a><Link href="/petitie#sustinere" className="rounded-md border border-zinc-700 px-6 py-3.5 font-medium hover:bg-zinc-900">Susține petiția</Link></div>
+        <p className="mt-5 text-xs text-zinc-500">{collecting ? 'Nume, email și acord. Fără cont, CNP sau confirmare prin email.' : 'Proiect pentru consultare. Formularul de susținere se pregătește pentru lansare.'}</p>
+      </div>
+    </section>
+    <section id="demo" className="border-t border-zinc-800 bg-zinc-950/50"><div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"><div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">Evenimente reale · Tranzacții simulate</p><h2 className="text-2xl font-bold">Predicții despre România</h2><p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-400">Întrebări verificabile, surse de rezoluție și credite gratuite. Procentele de pornire sunt ilustrative; nu există bani reali sau premii.</p></div><Link href="/cum-functioneaza" className="text-sm text-emerald-300 underline">Explicația pe scurt →</Link></div><DemoMarkets /></div></section>
+    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <h2 className="text-2xl font-bold">Trei principii pentru reguli mai bune</h2>
+      <div className="mt-7 grid gap-4 md:grid-cols-3">{[
+        { icon: Users, title: 'Concurență deschisă', text: 'Evaluarea barierelor de intrare și spațiu pentru alternative eficiente, inclusiv modele fără comision de tranzacționare.' },
+        { icon: Eye, title: 'Costuri la vedere', text: 'Comisioane, marje în cote și condiții explicate înainte de participare. Zero comision nu înseamnă automat zero cost total.' },
+        { icon: Scale, title: 'Fiscalitate proporțională', text: 'Analiza separată a taxelor operatorilor și ale participanților, în funcție de mecanismul economic și de riscuri.' },
+      ].map(({ icon: Icon, title, text }) => <article key={title} className="rounded-xl border border-zinc-800 bg-zinc-950 p-6"><Icon className="mb-5 h-5 w-5 text-emerald-300" /><h3 className="text-lg font-semibold">{title}</h3><p className="mt-3 text-sm leading-7 text-zinc-400">{text}</p></article>)}</div>
+    </section>
+    <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8"><div className="rounded-xl border border-zinc-800 p-6 sm:p-8"><h2 className="text-2xl font-bold">Ce poate schimba o petiție?</h2><p className="mt-4 max-w-3xl leading-7 text-zinc-400">Poate cere o consultare publică și poate construi sprijin pentru un proiect al Guvernului sau al parlamentarilor. Semnăturile nu modifică automat legea. În România, schimbările fiscale nu pot urma procedura inițiativei legislative cetățenești.</p><Link href="/cercetare" className="mt-5 inline-block text-sm font-semibold text-emerald-300">Traseul legal și sursele oficiale →</Link></div></section>
 
-  const loadMarkets = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/markets');
-      const data = await response.json();
-      setSnapshot(data);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadMarkets();
-  }, []);
-
-  const filteredMarkets = useMemo(() => {
-    const markets = snapshot?.markets || [];
-    const normalizedSearch = search.trim().toLowerCase();
-
-    return markets.filter((market) => {
-      const matchesCategory = category === 'all' || market.category === category;
-      const matchesSearch =
-        !normalizedSearch ||
-        market.question.toLowerCase().includes(normalizedSearch) ||
-        market.description.toLowerCase().includes(normalizedSearch) ||
-        market.tags.some((tag) => tag.toLowerCase().includes(normalizedSearch));
-      return matchesCategory && matchesSearch;
-    });
-  }, [category, search, snapshot]);
-
-  return (
-    <main className="min-h-screen bg-black">
-      <header className="border-b border-zinc-900 bg-black/90">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Marketz.ro" width={44} height={44} className="rounded-md" priority />
-            <div>
-              <div className="text-xl font-bold tracking-tight text-white">Marketz.ro</div>
-              <div className="text-xs text-zinc-500">Romania-focused prediction markets</div>
-            </div>
-          </Link>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link
-              href="/admin"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-zinc-800 px-4 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-900"
-            >
-              <ShieldCheck className="h-4 w-4" />
-              Admin mock
-            </Link>
-            <WalletPanel walletState={walletState} compact />
-          </div>
-        </div>
-      </header>
-
-      <section className="border-b border-zinc-900">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px] lg:px-8">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-              <Sparkles className="h-3.5 w-3.5" />
-              Mock on-chain MVP
-            </div>
-            <h1 className="max-w-4xl text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              Piețe de predicții pentru România, cu trading mock și settlement transparent.
-            </h1>
-            <p className="mt-4 max-w-3xl text-base leading-7 text-zinc-400">
-              Cumpără shares pe rezultate, urmărește probabilități în timp real și testează fluxul de wallet fără bani reali sau blockchain real.
-            </p>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                  <BarChart3 className="h-4 w-4 text-emerald-300" />
-                  Volum demo
-                </div>
-                <div className="mt-2 text-2xl font-bold text-white">{snapshot?.totalVolume.toLocaleString('ro-RO') || '0'} mRON</div>
-              </div>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                  <Coins className="h-4 w-4 text-amber-300" />
-                  Risc LP demo
-                </div>
-                <div className="mt-2 text-2xl font-bold text-white">{snapshot?.totalLiquidityRisk.toLocaleString('ro-RO') || '0'} mRON</div>
-              </div>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                  <WalletCards className="h-4 w-4 text-sky-300" />
-                  Piețe deschise
-                </div>
-                <div className="mt-2 text-2xl font-bold text-white">{snapshot?.openMarkets || 0}</div>
-              </div>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
-                <div className="flex items-center gap-2 text-sm text-zinc-400">
-                  <ShieldCheck className="h-4 w-4 text-sky-300" />
-                  Trade-uri mock
-                </div>
-                <div className="mt-2 text-2xl font-bold text-white">{snapshot?.totalTrades || 0}</div>
-              </div>
-            </div>
-          </div>
-          <PortfolioPanel address={walletState.address} />
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Piețe active</h2>
-            <p className="mt-1 text-sm text-zinc-500">Probabilități calculate cu un market maker LMSR mock.</p>
-          </div>
-          <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Caută piață"
-                className="h-11 w-full rounded-md border border-zinc-800 bg-zinc-950 pl-9 pr-3 text-sm text-white outline-none focus:border-emerald-400 sm:w-72"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-          {categories.map((item) => (
-            <button
-              key={item}
-              onClick={() => setCategory(item)}
-              className={`h-9 shrink-0 rounded-md border px-3 text-sm font-medium transition ${
-                category === item
-                  ? 'border-emerald-400 bg-emerald-400 text-zinc-950'
-                  : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:bg-zinc-900'
-              }`}
-            >
-              {item === 'all' ? 'Toate' : categoryLabel(item)}
-            </button>
-          ))}
-        </div>
-
-        {isLoading ? (
-          <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-8 text-center text-zinc-400">Se încarcă piețele...</div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filteredMarkets.map((market) => (
-              <MarketCard key={market.id} market={market} />
-            ))}
-          </div>
-        )}
-
-        {!isLoading && filteredMarkets.length === 0 && (
-          <div className="rounded-lg border border-dashed border-zinc-800 p-8 text-center text-zinc-500">Nu există piețe pentru filtrul curent.</div>
-        )}
-      </section>
-    </main>
-  );
+  </main>;
 }
