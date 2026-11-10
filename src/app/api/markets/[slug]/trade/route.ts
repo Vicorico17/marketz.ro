@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to place trade' },
+      { error: error instanceof SyntaxError ? 'Formatul cererii este invalid.' : error instanceof TypeError ? 'Datele cererii sunt invalide.' : error instanceof Error ? error.message : 'Tranzacția a eșuat' },
       { status: 400 },
     );
   }

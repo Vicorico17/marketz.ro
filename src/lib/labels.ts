@@ -15,7 +15,7 @@ export function categoryLabel(category: MarketCategory) {
 
 export function statusLabel(status: MarketStatus) {
   const labels: Record<MarketStatus, string> = {
-    draft: 'Draft',
+    draft: 'Ciornă',
     open: 'Deschisă',
     closed: 'Închisă',
     resolved: 'Rezolvată',

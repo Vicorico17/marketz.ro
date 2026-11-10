@@ -130,13 +130,13 @@ export default function AdminPage() {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Market creation failed');
+        throw new Error(data.error || 'Crearea pieței a eșuat');
       }
       setMessage('Piața a fost creată.');
       setForm({ ...initialForm, closeAt: tomorrowLocalInput() });
       await loadMarkets();
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : 'Market creation failed');
+      setError(createError instanceof TypeError ? "Conexiunea a eșuat. Încearcă din nou." : createError instanceof Error ? createError.message : 'Crearea pieței a eșuat');
     }
   };
 
@@ -155,12 +155,12 @@ export default function AdminPage() {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Update failed');
+        throw new Error(data.error || 'Actualizarea a eșuat');
       }
-      setMessage(`Status actualizat: ${statusLabel(status)}.`);
+      setMessage(`Stare actualizată: ${statusLabel(status)}.`);
       await loadMarkets();
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : 'Update failed');
+      setError(updateError instanceof TypeError ? "Conexiunea a eșuat. Încearcă din nou." : updateError instanceof Error ? updateError.message : 'Actualizarea a eșuat');
     }
   };
 
@@ -179,17 +179,17 @@ export default function AdminPage() {
         body: JSON.stringify({
           action: 'resolve',
           outcomeId,
-          notes: resolveNotes[market.id] || 'Rezolvat din consola mock.',
+          notes: resolveNotes[market.id] || 'Rezolvat din panoul de administrare demonstrativ.',
         }),
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Resolution failed');
+        throw new Error(data.error || 'Rezolvarea pieței a eșuat');
       }
-      setMessage('Piața a fost rezolvată și payout-ul mock a fost creditat.');
+      setMessage('Piața a fost rezolvată, iar plata demonstrativă a fost creditată.');
       await loadMarkets();
     } catch (resolveError) {
-      setError(resolveError instanceof Error ? resolveError.message : 'Resolution failed');
+      setError(resolveError instanceof TypeError ? "Conexiunea a eșuat. Încearcă din nou." : resolveError instanceof Error ? resolveError.message : 'Rezolvarea pieței a eșuat');
     }
   };
 
@@ -203,7 +203,7 @@ export default function AdminPage() {
           </Link>
           <div className="inline-flex items-center gap-2 text-sm text-zinc-400">
             <ShieldCheck className="h-4 w-4 text-emerald-300" />
-            Mock admin console
+            Panou de administrare demonstrativ
           </div>
         </div>
       </header>
@@ -211,7 +211,7 @@ export default function AdminPage() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[420px_1fr] lg:px-8">
         <section className="space-y-5">
           <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-            <label className="mb-2 block text-sm font-medium text-zinc-300">Admin mock key</label>
+            <label className="mb-2 block text-sm font-medium text-zinc-300">Cheie de administrator</label>
             <input
               value={adminKey}
               onChange={(event) => saveKey(event.target.value)}
@@ -219,7 +219,7 @@ export default function AdminPage() {
               className="h-11 w-full rounded-md border border-zinc-700 bg-black px-3 text-white outline-none focus:border-emerald-400"
             />
             <p className="mt-3 text-xs leading-5 text-zinc-500">
-              Cheia default pentru development este <span className="font-mono text-zinc-300">marketz-admin</span>. Nu este autentificare de producție.
+              Cheia implicită pentru dezvoltare este <span className="font-mono text-zinc-300">marketz-admin</span>. Nu este autentificare de producție.
             </p>
           </div>
 
@@ -267,7 +267,7 @@ export default function AdminPage() {
                   />
                 </Field>
               </div>
-              <Field label="Tag-uri">
+              <Field label="Etichete">
                 <input
                   value={form.tags}
                   onChange={(event) => setForm({ ...form, tags: event.target.value })}
@@ -276,7 +276,7 @@ export default function AdminPage() {
                 />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Outcome-uri">
+                <Field label="Rezultate posibile">
                   <textarea
                     value={form.outcomes}
                     onChange={(event) => setForm({ ...form, outcomes: event.target.value })}
@@ -295,10 +295,10 @@ export default function AdminPage() {
                 </Field>
               </div>
               <div className="rounded-md border border-zinc-800 bg-black p-4 text-sm">
-                <div className="mb-3 font-semibold text-white">Preview lichiditate</div>
+                <div className="mb-3 font-semibold text-white">Estimarea lichidității</div>
                 <div className="grid gap-2 text-zinc-400 sm:grid-cols-2">
                   <div className="flex justify-between gap-3">
-                    <span>Outcome-uri</span>
+                    <span>Rezultate posibile</span>
                     <span className="font-medium text-white">{riskPreview.outcomeCount}</span>
                   </div>
                   <div className="flex justify-between gap-3">
@@ -306,17 +306,17 @@ export default function AdminPage() {
                     <span className="font-medium text-white">{riskPreview.liquidity.toLocaleString('ro-RO')}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span>Risc LP estimat</span>
+                    <span>Risc estimat al furnizorului de lichiditate</span>
                     <span className="font-medium text-white">{riskPreview.estimatedRisk.toLocaleString('ro-RO')} mRON</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span>Trade max recomandat</span>
+                    <span>Tranzacție maximă recomandată</span>
                     <span className="font-medium text-white">{riskPreview.recommendedMaxTrade.toLocaleString('ro-RO')} mRON</span>
                   </div>
                 </div>
                 {riskPreview.isSkewed && (
                   <div className="mt-3 rounded-md border border-amber-400/30 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">
-                    Probabilitățile sunt foarte dezechilibrate. Outcome-ul ieftin poate produce pierdere LP mare dacă se rezolvă câștigător.
+                    Probabilitățile sunt foarte dezechilibrate. Rezultatul cu preț mic poate produce o pierdere mare furnizorului de lichiditate dacă este declarat câștigător.
                   </div>
                 )}
               </div>
@@ -351,8 +351,8 @@ export default function AdminPage() {
 
         <section className="min-w-0">
           <div className="mb-5">
-            <h2 className="text-2xl font-bold text-white">Market ops</h2>
-            <p className="mt-1 text-sm text-zinc-500">Controlează statusul și settlement-ul mock.</p>
+            <h2 className="text-2xl font-bold text-white">Administrarea piețelor</h2>
+            <p className="mt-1 text-sm text-zinc-500">Gestionează starea și decontarea demonstrativă.</p>
           </div>
           <div className="space-y-4">
             {markets.map((market) => (
@@ -369,7 +369,7 @@ export default function AdminPage() {
                       {market.question}
                     </Link>
                     <div className="mt-1 text-sm text-zinc-500">
-                      {market.volume.toLocaleString('ro-RO')} mRON · {market.tradeCount} trade-uri · {market.liquidityRisk.toLocaleString('ro-RO')} mRON risc LP
+                      {market.volume.toLocaleString('ro-RO')} mRON · {market.tradeCount} tranzacții · {market.liquidityRisk.toLocaleString('ro-RO')} mRON risc de lichiditate
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -403,7 +403,7 @@ export default function AdminPage() {
                     <input
                       value={resolveNotes[market.id] || ''}
                       onChange={(event) => setResolveNotes({ ...resolveNotes, [market.id]: event.target.value })}
-                      placeholder="Note settlement"
+                      placeholder="Justificarea rezolvării"
                       className="h-10 rounded-md border border-zinc-700 bg-black px-3 text-sm text-white outline-none focus:border-emerald-400"
                     />
                     <button

@@ -262,16 +262,16 @@ export function createMarket(input: CreateMarketInput) {
 
 function validateMarketInput(input: CreateMarketInput) {
   if (typeof input.question !== 'string' || input.question.trim().length < 12 || input.question.length > 300) {
-    throw new Error('Question must be at least 12 characters');
+    throw new Error('Întrebarea trebuie să aibă între 12 și 300 de caractere');
   }
   if (typeof input.description !== 'string' || input.description.trim().length < 30 || input.description.length > 5000) {
-    throw new Error('Description must be at least 30 characters');
+    throw new Error('Descrierea trebuie să aibă între 30 și 5.000 de caractere');
   }
   if (typeof input.resolutionSource !== 'string' || input.resolutionSource.trim().length < 20 || input.resolutionSource.length > 2000) {
-    throw new Error('Resolution source must be specific');
+    throw new Error('Sursa de rezolvare trebuie să fie precisă și să aibă între 20 și 2.000 de caractere');
   }
   if (!Array.isArray(input.outcomes) || input.outcomes.length < 2 || input.outcomes.length > 5) {
-    throw new Error('Markets need between 2 and 5 outcomes');
+    throw new Error('Piața trebuie să aibă între 2 și 5 rezultate posibile');
   }
   if (!['politica', 'economie', 'sport', 'locale', 'cultura', 'tech', 'meteo'].includes(input.category)) throw new Error('Categorie invalidă');
   if (input.outcomes.some((label) => typeof label !== 'string' || !slugify(label) || label.length > 100)) throw new Error('Rezultat invalid');
@@ -279,28 +279,28 @@ function validateMarketInput(input: CreateMarketInput) {
   if (input.startingProbabilities !== undefined && (!Array.isArray(input.startingProbabilities) || input.startingProbabilities.some((p) => !Number.isFinite(p) || p <= 0))) throw new Error('Probabilitățile trebuie să fie pozitive');
   const uniqueOutcomes = new Set(input.outcomes.map((outcome) => createOutcomeId(outcome, 0)));
   if (uniqueOutcomes.size !== input.outcomes.length) {
-    throw new Error('Outcome labels must be unique');
+    throw new Error('Denumirile rezultatelor trebuie să fie distincte');
   }
   const closeAt = Date.parse(input.closeAt);
   if (!Number.isFinite(closeAt) || closeAt <= Date.now()) {
-    throw new Error('Close date must be in the future');
+    throw new Error('Data închiderii trebuie să fie în viitor');
   }
   if (input.liquidity !== undefined && (!Number.isFinite(input.liquidity) || input.liquidity < 20 || input.liquidity > 10_000)) {
-    throw new Error('Liquidity must be between 20 and 10,000');
+    throw new Error('Lichiditatea trebuie să fie între 20 și 10.000');
   }
   if (
     input.startingProbabilities &&
     input.startingProbabilities.length > 0 &&
     input.startingProbabilities.length !== input.outcomes.length
   ) {
-    throw new Error('Starting probabilities must match the number of outcomes');
+    throw new Error('Numărul probabilităților inițiale trebuie să corespundă numărului de rezultate');
   }
 }
 
 export function updateMarket(slugOrId: string, updates: Partial<Pick<Market, 'status' | 'closeAt' | 'description' | 'resolutionSource'>>) {
   const market = findMarket(slugOrId);
   if (!market) {
-    throw new Error('Market not found');
+    throw new Error('Piața nu a fost găsită');
   }
 
   if (market.status === 'resolved' || market.status === 'voided') {
@@ -308,7 +308,7 @@ export function updateMarket(slugOrId: string, updates: Partial<Pick<Market, 'st
   }
   const clean = Object.fromEntries(Object.entries(updates).filter(([, value]) => value !== undefined));
   if (clean.status !== undefined && !['draft', 'open', 'closed', 'voided'].includes(String(clean.status))) {
-    throw new Error('Status invalid');
+    throw new Error('Stare invalidă');
   }
   if (clean.closeAt !== undefined && (typeof clean.closeAt !== 'string' || !Number.isFinite(Date.parse(clean.closeAt)))) {
     throw new Error('Data închiderii este invalidă');
@@ -341,13 +341,13 @@ export function resolveMarket(slugOrId: string, input: ResolveMarketInput) {
   const state = getState();
   const market = findMarket(slugOrId);
   if (!market) {
-    throw new Error('Market not found');
+    throw new Error('Piața nu a fost găsită');
   }
   if (!market.outcomes.some((outcome) => outcome.id === input.outcomeId)) {
-    throw new Error('Outcome not found');
+    throw new Error('Rezultatul nu a fost găsit');
   }
   if (market.status === 'resolved' || market.status === 'voided') {
-    throw new Error('Market is already finalized');
+    throw new Error('Piața este deja finalizată');
   }
   if (typeof input.notes !== 'string' || input.notes.trim().length < 10) {
     throw new Error('Adaugă o justificare a rezultatului (minimum 10 caractere)');
@@ -412,7 +412,7 @@ export function faucetWallet(address: string, amount = 250) {
 export function getQuote(slugOrId: string, outcomeId: string, amount: number, side: TradeSide = 'buy'): TradeQuote {
   const market = findMarket(slugOrId);
   if (!market) {
-    throw new Error('Market not found');
+    throw new Error('Piața nu a fost găsită');
   }
   if (publicMarket(market).status !== 'open') throw new Error('Piața este închisă');
   if (side !== 'buy' && side !== 'sell') throw new Error('Tip de tranzacție invalid');
@@ -423,14 +423,14 @@ export function placeTrade(input: PlaceTradeInput) {
   const state = getState();
   const market = findMarket(input.marketSlug);
   if (!market) {
-    throw new Error('Market not found');
+    throw new Error('Piața nu a fost găsită');
   }
   if (market.status !== 'open') {
-    throw new Error('Market is not open');
+    throw new Error('Piața nu este deschisă');
   }
   if (Date.parse(market.closeAt) <= Date.now()) {
     market.status = 'closed';
-    throw new Error('Market is closed');
+    throw new Error('Piața este închisă');
   }
 
   const side = input.side || 'buy';
@@ -438,7 +438,7 @@ export function placeTrade(input: PlaceTradeInput) {
   const wallet = getOrCreateWallet(input.walletAddress);
   const outcome = market.outcomes.find((candidate) => candidate.id === input.outcomeId);
   if (!outcome) {
-    throw new Error('Outcome not found');
+    throw new Error('Rezultatul nu a fost găsit');
   }
 
   const quote = side === 'sell'
@@ -446,13 +446,13 @@ export function placeTrade(input: PlaceTradeInput) {
     : quoteBuy(market, input.outcomeId, input.amount);
 
   if (side === 'buy' && wallet.balance < quote.amount) {
-    throw new Error('Insufficient demo balance');
+    throw new Error('Soldul demonstrativ este insuficient');
   }
 
   const positionId = `${wallet.address}:${market.id}:${input.outcomeId}`;
   const existing = state.positions.find((position) => position.id === positionId);
   if (side === 'sell' && (!existing || existing.shares < quote.shares)) {
-    throw new Error('Not enough shares to sell');
+    throw new Error('Nu ai suficiente unități pentru vânzare');
   }
 
   const createdAt = now();

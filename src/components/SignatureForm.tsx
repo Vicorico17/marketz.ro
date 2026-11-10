@@ -13,7 +13,7 @@ export function SignatureForm({ enabled, organizer }: { enabled: boolean; organi
       const response = await fetch('/api/petition/sign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: data.get('name'), email: data.get('email'), consent: data.get('consent') === 'on', website: data.get('website'), version: petitionVersion }) });
       const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Cererea nu a putut fi trimisă.');
       setMessage(result.message); setSent(true);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Verifică conexiunea și încearcă din nou.'); }
+    } catch (cause) { setError(cause instanceof TypeError ? "Conexiunea a eșuat. Încearcă din nou." : cause instanceof Error ? cause.message : 'Verifică conexiunea și încearcă din nou.'); }
     finally { setBusy(false); }
   }
   return <section id="sustinere" className="scroll-mt-6 rounded-2xl border border-emerald-400/40 bg-emerald-400/5 p-6 sm:p-8">

@@ -129,7 +129,7 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
         activeWallet = await onConnect();
       }
       if (!activeWallet) {
-        throw new Error('Wallet mock neconectat');
+        throw new Error('Contul demonstrativ nu este conectat');
       }
 
       const response = await fetch(`/api/markets/${market.slug}/trade`, {
@@ -145,13 +145,13 @@ export function TradeTicket({ market, wallet, refreshKey, onConnect, onTradeComp
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Trade eșuat');
+        throw new Error(data.error || 'Tranzacția a eșuat');
       }
 
       setSuccessTx(data.trade.txHash);
       onTradeComplete();
     } catch (tradeError) {
-      setError(tradeError instanceof Error ? tradeError.message : 'Trade eșuat');
+      setError(tradeError instanceof TypeError ? "Conexiunea a eșuat. Încearcă din nou." : tradeError instanceof Error ? tradeError.message : 'Tranzacția a eșuat');
     } finally {
       setIsSubmitting(false);
     }

@@ -15,7 +15,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if (!isAdmin(request)) {
-    return NextResponse.json({ error: 'Invalid mock admin key' }, { status: 401 });
+    return NextResponse.json({ error: 'Cheia de administrator este invalidă' }, { status: 401 });
   }
 
   try {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ market }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create market' },
+      { error: error instanceof SyntaxError ? 'Formatul cererii este invalid.' : error instanceof TypeError ? 'Datele cererii sunt invalide.' : error instanceof Error ? error.message : 'Crearea pieței a eșuat' },
       { status: 400 },
     );
   }

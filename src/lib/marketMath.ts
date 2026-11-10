@@ -106,11 +106,11 @@ export function proceedsFromSellingShares(market: Market, outcomeId: string, sha
 
 export function quoteBuy(market: Market, outcomeId: string, amount: number): TradeQuote {
   if (!market.outcomes.some((outcome) => outcome.id === outcomeId)) {
-    throw new Error('Outcome not found');
+    throw new Error('Rezultatul nu a fost găsit');
   }
 
   if (!Number.isFinite(amount) || amount < MIN_SPEND || amount > MAX_SPEND) {
-    throw new Error(`Trade amount must be between ${MIN_SPEND} and ${MAX_SPEND}`);
+    throw new Error(`Suma tranzacției trebuie să fie între ${MIN_SPEND} și ${MAX_SPEND}`);
   }
 
   amount = roundMoney(amount);
@@ -121,7 +121,7 @@ export function quoteBuy(market: Market, outcomeId: string, amount: number): Tra
   while (costToBuyShares(market, outcomeId, high) < amount) {
     high *= 2;
     if (high > 1_000_000) {
-      throw new Error('Trade size is too large for this market');
+      throw new Error('Suma tranzacției este prea mare pentru această piață');
     }
   }
 
@@ -156,11 +156,11 @@ export function quoteBuy(market: Market, outcomeId: string, amount: number): Tra
 
 export function quoteSell(market: Market, outcomeId: string, shares: number): TradeQuote {
   if (!market.outcomes.some((outcome) => outcome.id === outcomeId)) {
-    throw new Error('Outcome not found');
+    throw new Error('Rezultatul nu a fost găsit');
   }
 
   if (!Number.isFinite(shares) || shares < MIN_SHARES || shares > MAX_SELL_SHARES) {
-    throw new Error(`Share amount must be between ${MIN_SHARES} and ${MAX_SELL_SHARES}`);
+    throw new Error(`Numărul de unități trebuie să fie între ${MIN_SHARES} și ${MAX_SELL_SHARES}`);
   }
 
   const probabilitiesBefore = probabilitiesFor(market.outcomes, market.quantities, market.liquidity);

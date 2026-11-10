@@ -8,6 +8,6 @@ export async function POST(request: Request, { params }: { params: { address: st
     const body = await request.json();
     return NextResponse.json({ wallet: faucetWallet(params.address, body.amount === undefined ? 250 : Number(body.amount)) });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid faucet request' }, { status: 400 });
+    return NextResponse.json({ error: error instanceof SyntaxError ? 'Formatul cererii este invalid.' : error instanceof TypeError ? 'Datele cererii sunt invalide.' : error instanceof Error ? error.message : 'Cererea de credite demonstrative este invalidă' }, { status: 400 });
   }
 }

@@ -12,7 +12,7 @@ function isAdmin(request: Request) {
 export async function GET(_request: Request, { params }: { params: { slug: string } }) {
   const market = getMarket(params.slug);
   if (!market) {
-    return NextResponse.json({ error: 'Market not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Piața nu a fost găsită' }, { status: 404 });
   }
 
   return NextResponse.json(market);
@@ -20,7 +20,7 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
 
 export async function PATCH(request: Request, { params }: { params: { slug: string } }) {
   if (!isAdmin(request)) {
-    return NextResponse.json({ error: 'Invalid mock admin key' }, { status: 401 });
+    return NextResponse.json({ error: 'Cheia de administrator este invalidă' }, { status: 401 });
   }
 
   try {
@@ -31,7 +31,7 @@ export async function PATCH(request: Request, { params }: { params: { slug: stri
     }
 
     const allowedStatuses: MarketStatus[] = ['draft', 'open', 'closed', 'voided'];
-    if (body.status !== undefined && !allowedStatuses.includes(body.status)) throw new Error('Status invalid');
+    if (body.status !== undefined && !allowedStatuses.includes(body.status)) throw new Error('Stare invalidă');
     const status = allowedStatuses.includes(body.status) ? body.status : undefined;
     const market = updateMarket(params.slug, {
       status,
@@ -43,7 +43,7 @@ export async function PATCH(request: Request, { params }: { params: { slug: stri
     return NextResponse.json({ market });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to update market' },
+      { error: error instanceof SyntaxError ? 'Formatul cererii este invalid.' : error instanceof TypeError ? 'Datele cererii sunt invalide.' : error instanceof Error ? error.message : 'Actualizarea pieței a eșuat' },
       { status: 400 },
     );
   }

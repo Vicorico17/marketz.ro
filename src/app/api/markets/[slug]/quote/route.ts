@@ -13,7 +13,7 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     return NextResponse.json({ quote });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to quote trade' },
+      { error: error instanceof SyntaxError ? 'Formatul cererii este invalid.' : error instanceof TypeError ? 'Datele cererii sunt invalide.' : error instanceof Error ? error.message : 'Estimarea tranzacției a eșuat' },
       { status: 400 },
     );
   }

@@ -33,7 +33,7 @@ export function useMockWallet() {
       try { localStorage.setItem(WALLET_KEY, data.wallet.address); } catch { /* Use this session only. */ }
       return data.wallet as WalletAccount;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Conexiunea a eșuat');
+      setError(cause instanceof TypeError ? "Conexiunea a eșuat. Încearcă din nou." : cause instanceof Error ? cause.message : 'Conexiunea a eșuat');
       return null;
     } finally {
       setIsLoading(false);
@@ -77,7 +77,7 @@ export function useMockWallet() {
       setWallet(data.wallet);
       return data.wallet as WalletAccount;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Conexiunea a eșuat');
+      setError(cause instanceof TypeError ? "Conexiunea a eșuat. Încearcă din nou." : cause instanceof Error ? cause.message : 'Conexiunea a eșuat');
       return null;
     } finally {
       setIsLoading(false);

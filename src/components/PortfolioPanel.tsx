@@ -31,7 +31,7 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
     setError(false);
     let isMounted = true;
     fetch(`/api/wallets/${address}/portfolio`)
-      .then((response) => { if (!response.ok) throw new Error('Portfolio unavailable'); return response.json(); })
+      .then((response) => { if (!response.ok) throw new Error('Portofoliul nu este disponibil'); return response.json(); })
       .then((nextData) => {
         if (isMounted) {
           setData(nextData);
@@ -52,7 +52,7 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
   if (!address) {
     return (
       <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-400">
-        Conectează un wallet mock pentru portofoliu, poziții și istoric.
+        Deschide un cont demonstrativ pentru portofoliu, poziții și istoric.
       </div>
     );
   }
@@ -77,13 +77,13 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
         </div>
         <div className="grid gap-2 text-right">
           <div className="rounded-lg border border-zinc-800 bg-black px-3 py-2">
-            <div className="text-xs text-zinc-500">PnL nerealizat</div>
+            <div className="text-xs text-zinc-500">Profit sau pierdere nerealizată</div>
             <div className={markValue - costBasis >= 0 ? 'font-semibold text-emerald-300' : 'font-semibold text-red-300'}>
               {(markValue - costBasis).toLocaleString('ro-RO')} mRON
             </div>
           </div>
           <div className="rounded-lg border border-zinc-800 bg-black px-3 py-2">
-            <div className="text-xs text-zinc-500">PnL realizat</div>
+            <div className="text-xs text-zinc-500">Profit sau pierdere realizată</div>
             <div className={realizedPnl >= 0 ? 'font-semibold text-emerald-300' : 'font-semibold text-red-300'}>
               {realizedPnl.toLocaleString('ro-RO')} mRON
             </div>
@@ -106,7 +106,7 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
               <ExternalLink className="h-4 w-4 shrink-0 text-zinc-600" />
             </div>
             <div className="grid grid-cols-3 gap-2 text-xs text-zinc-400">
-              <span>{position.shares.toLocaleString('ro-RO')} shares</span>
+              <span>{position.shares.toLocaleString('ro-RO')} unități</span>
               <span>{toPercent(position.currentProbability)}%</span>
               <span className={position.unrealizedPnl >= 0 ? 'text-emerald-300' : 'text-red-300'}>
                 {position.unrealizedPnl.toLocaleString('ro-RO')}
@@ -125,7 +125,7 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
       <div className="mt-5 border-t border-zinc-800 pt-5">
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-300">
           <TrendingUp className="h-4 w-4 text-emerald-300" />
-          Ultimele trade-uri
+          Ultimele tranzacții
         </div>
         <div className="space-y-2">
           {data.trades.slice(0, 4).map((trade) => (
@@ -136,7 +136,7 @@ export function PortfolioPanel({ address, refreshKey }: PortfolioPanelProps) {
               <span className="shrink-0 text-zinc-300">{trade.amount.toLocaleString('ro-RO')} mRON</span>
             </div>
           ))}
-          {data.trades.length === 0 && <div className="text-xs text-zinc-500">Fără trade-uri.</div>}
+          {data.trades.length === 0 && <div className="text-xs text-zinc-500">Fără tranzacții.</div>}
         </div>
       </div>
     </div>
