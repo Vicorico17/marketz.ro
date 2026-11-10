@@ -55,3 +55,12 @@ export async function withdrawSignature(token: string) {
   const result = await signatures.deleteOne({ withdrawHash: hash(token), expiresAt: { $gt: new Date() } });
   return result.deletedCount === 1;
 }
+
+export async function getSignatureCount(): Promise<number | null> {
+  if (!process.env.MONGODB_URI) return null;
+  try {
+    return await (await db()).collection<Signature>('petition_signatures').countDocuments({
+      version: petitionVersion, status: 'submitted', expiresAt: { $gt: new Date() },
+    }, { maxTimeMS: 3000 });
+  } catch { return null; }
+}

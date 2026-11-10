@@ -1,3 +1,4 @@
+import { getSignatureCount } from '@/lib/petitionStore';
 import { PetitionResearch } from '@/components/PetitionResearch';
 import type { Metadata } from 'next';
 import { ArrowUpRight, Landmark, Scale, ScanEye, Sparkles } from 'lucide-react';
@@ -6,18 +7,21 @@ import { getPetitionConfig } from '@/lib/petitionConfig';
 import { demands, petitionIntro, petitionTitle, petitionText, researchDate, sources } from '@/lib/campaign';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Semnează pentru un cadru distinct al piețelor de predicții' };
-export default function PetitionPage() {
+export default async function PetitionPage() {
   const config = getPetitionConfig();
+  const signatureCount = await getSignatureCount();
   const paragraphs = petitionText.split('\n\n');
   return <main className="campaign-surface">
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
-      <header className="mb-10 max-w-4xl sm:mb-14">
-        <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/[0.06] px-3.5 py-2 text-xs font-medium text-emerald-200"><Sparkles className="h-3.5 w-3.5" /> O inițiativă Marketz.ro</p>
-        <h1 className="text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.045em] sm:text-6xl">O piață liberă.<br /><span className="text-emerald-300">Un cadru distinct.</span></h1>
-        <p className="mt-6 max-w-2xl text-base leading-8 text-zinc-400 sm:text-lg">Cerem recunoașterea piețelor de predicții ca o categorie distinctă de pariurile convenționale, cu fiscalitate proporțională și costuri la vedere.</p>
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-16 lg:px-8">
+      <section className="mb-12 grid min-h-[75svh] items-start gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-16" aria-label="Susține petiția">
+      <header className="max-w-4xl lg:py-12">
+        <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/[0.06] px-3.5 py-2 text-xs font-medium text-emerald-200"><Sparkles className="h-3.5 w-3.5" /> O inițiativă Marketz.ro</p>
+        <h1 className="text-balance text-3xl font-semibold leading-[1.08] tracking-[-0.045em] sm:text-6xl">O piață liberă.<br /><span className="text-emerald-300">Un cadru distinct.</span></h1>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-lg">Cerem recunoașterea piețelor de predicții ca o categorie distinctă de pariurile convenționale, cu fiscalitate proporțională și costuri la vedere.</p>
       </header>
-      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start lg:gap-12">
-        <aside className="order-first lg:sticky lg:top-6 lg:order-last"><SignatureForm enabled={config.enabled} organizer={config.organizer} /></aside>
+      <SignatureForm enabled={config.enabled} organizer={config.organizer} signatureCount={signatureCount} />
+      </section>
+      <div className="mx-auto max-w-4xl">
         <div className="min-w-0 space-y-10">
           <section aria-label="Ce susții prin semnare" className="grid gap-3 sm:grid-cols-3">
             {[

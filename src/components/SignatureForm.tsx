@@ -1,9 +1,11 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { ArrowRight, Check, PenLine, ShieldCheck } from 'lucide-react';
 import { petitionVersion } from '@/lib/petitionValidation';
-export function SignatureForm({ enabled, organizer }: { enabled: boolean; organizer: string }) {
+export function SignatureForm({ enabled, organizer, signatureCount }: { enabled: boolean; organizer: string; signatureCount: number | null }) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState('');
   const [sent, setSent] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -13,11 +15,12 @@ export function SignatureForm({ enabled, organizer }: { enabled: boolean; organi
     try {
       const response = await fetch('/api/petition/sign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: data.get('name'), email: data.get('email'), consent: data.get('consent') === 'on', website: data.get('website'), version: petitionVersion }) });
       const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Cererea nu a putut fi trimisă.');
-      setMessage(result.message); setSent(true);
+      setMessage(result.message); setSent(true); router.refresh();
     } catch (cause) { setError(cause instanceof TypeError ? "Conexiunea a eșuat. Încearcă din nou." : cause instanceof Error ? cause.message : 'Verifică conexiunea și încearcă din nou.'); }
     finally { setBusy(false); }
   }
   return <section id="sustinere" className="scroll-mt-6 rounded-3xl border border-emerald-300/20 bg-[#111a17] p-6 shadow-[0_24px_90px_-35px_rgba(52,211,153,0.22)] sm:p-7">
+    <div aria-live="polite" className="mb-6 border-b border-emerald-300/10 pb-5">{signatureCount === null ? <p className="text-xs leading-6 text-zinc-400">Numărul susținerilor este momentan indisponibil.</p> : <><p className="text-4xl font-semibold tabular-nums tracking-tight text-emerald-300">{new Intl.NumberFormat('ro-RO').format(signatureCount)}</p><p className="mt-1 text-sm text-zinc-400">{signatureCount === 1 ? 'susținere înregistrată' : 'susțineri înregistrate'}</p><p className="mt-2 text-[11px] leading-5 text-zinc-500">Pentru această versiune a petiției. Identități declarate, neverificate.</p></>}</div>
     <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-300/10"><PenLine className="h-5 w-5 text-emerald-300" /></div><p className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-300">Vocea ta contează</p>
     <h2 className="mt-3 text-2xl font-semibold tracking-tight">Semnează pentru schimbare.</h2>
     <p className="mt-3 text-sm leading-7 text-zinc-400">Numele tău. O voce în plus pentru reguli mai bune. Textul integral este pe această pagină.</p>

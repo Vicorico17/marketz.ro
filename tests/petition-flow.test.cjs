@@ -14,6 +14,7 @@ const matches = (row, filter) => Object.entries(filter).every(([key, value]) => 
 });
 const signatures = {
   async createIndex() {},
+  async countDocuments(filter) { return records.filter(row => matches(row, filter)).length; },
   async insertOne(record) {
     if (records.some(r => r.emailHash === record.emailHash && r.version === record.version)) throw Object.assign(new Error('duplicate'), { code:11000 });
     records.push({ ...record }); return { insertedId: 'test' };
@@ -76,4 +77,26 @@ test('receipt delivery failure does not undo or reject a saved submission', asyn
     assert.equal(records[0].status,'submitted'); assert.equal(records[0].receiptStatus,'failed');
     assert.equal(records[0].emailVerified,false);
   } finally { global.fetch=oldFetch; }
+});
+
+test('supporter count excludes expired and other-version records, and reflects withdrawals', async () => {
+  records.length = 0;
+  const { petitionVersion } = require('../src/lib/petitionValidation.ts');
+  const future = new Date(Date.now() + 60000);
+  records.push(
+    { version: petitionVersion, status: 'submitted', expiresAt: future, withdrawHash: require('node:crypto').createHash('sha256').update('b'.repeat(64)).digest('hex') },
+    { version: petitionVersion, status: 'submitted', expiresAt: new Date(0) },
+    { version: 'old', status: 'submitted', expiresAt: future },
+  );
+  assert.equal(await service.getSignatureCount(), 1);
+  await service.withdrawSignature('b'.repeat(64));
+  assert.equal(await service.getSignatureCount(), 0);
+  const originalCount = signatures.countDocuments;
+  signatures.countDocuments = async () => { throw new Error('offline'); };
+  assert.equal(await service.getSignatureCount(), null);
+  signatures.countDocuments = originalCount;
+  const uri = process.env.MONGODB_URI;
+  delete process.env.MONGODB_URI;
+  assert.equal(await service.getSignatureCount(), null);
+  process.env.MONGODB_URI = uri;
 });
